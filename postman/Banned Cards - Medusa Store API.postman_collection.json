@@ -1,0 +1,2138 @@
+{
+  "info": {
+    "_postman_id": "b87df4d8-b29c-4bd4-92fb-bc0000000001",
+    "name": "Banned Cards - Medusa Store API",
+    "description": "Storefront-facing API coverage for the Banned Cards Medusa 2.21 backend. Run folders in order. Scryfall imports and image synchronization are CLI jobs.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:9000",
+      "type": "string"
+    },
+    {
+      "key": "admin_email",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "admin_password",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "admin_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "publishable_key",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "region_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "customer_email",
+      "value": "postman.customer@example.com",
+      "type": "string"
+    },
+    {
+      "key": "customer_password",
+      "value": "PostmanLocal123!",
+      "type": "string"
+    },
+    {
+      "key": "customer_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "registration_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "customer_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "address_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "search_query",
+      "value": "ring",
+      "type": "string"
+    },
+    {
+      "key": "product_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "variant_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "category_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "collection_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "product_type_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "product_tag_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "product_option_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "cart_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "line_item_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "promotion_code",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "shipping_option_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "payment_provider_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "payment_collection_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "order_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "order_line_item_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "return_reason_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "return_shipping_option_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "order_transfer_token",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "00 - Setup and health",
+      "description": "Run first. Discovers the publishable key and CLP region.",
+      "item": [
+        {
+          "name": "Health check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/health"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200',()=>pm.expect(pm.response.code).to.equal(200));",
+                  "pm.test('Medusa reports OK',()=>pm.expect(pm.response.text()).to.include('OK'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/auth/user/emailpass",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{admin_email}}\",\n  \"password\": \"{{admin_password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx',()=>pm.expect(pm.response.code).to.be.within(200,299));",
+                  "pm.test('Response is JSON',()=>pm.response.to.be.json);",
+                  "const d=pm.response.json(); if(d.token) pm.environment.set('admin_token',d.token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Find publishable API key",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/admin/api-keys?type=publishable&limit=100",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx',()=>pm.expect(pm.response.code).to.be.within(200,299));",
+                  "pm.test('Response is JSON',()=>pm.response.to.be.json);",
+                  "const a=pm.response.json().api_keys||[]; const x=a.find(v=>v.type==='publishable'); if(x&&x.token) pm.environment.set('publishable_key',x.token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Find CLP region",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-publishable-api-key",
+                "value": "{{publishable_key}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/store/regions?limit=100"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx',()=>pm.expect(pm.response.code).to.be.within(200,299));",
+                  "pm.test('Response is JSON',()=>pm.response.to.be.json);",
+                  "const a=pm.response.json().regions||[]; const x=a.find(v=>String(v.currency_code).toLowerCase()==='clp'); if(x) pm.environment.set('region_id',x.id);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "01 - Catalogue and discovery",
+      "description": "Read-only endpoints. List requests capture IDs for detail requests.",
+      "item": [
+        {
+          "name": "List complete TCG card catalogue",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-publishable-api-key",
+                "value": "{{publishable_key}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/store/tcg/cards?limit=100&offset=0"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx',()=>pm.expect(pm.response.code).to.be.within(200,299));",
+                  "pm.test('Response is JSON',()=>pm.response.to.be.json);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List products",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-publishable-api-key",
+                "value": "{{publishable_key}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/store/products?region_id={{region_id}}&limit=100&fields=*variants.calculated_price,+variants.inventory_quantity,+variants.metadata,+metadata"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx',()=>pm.expect(pm.response.code).to.be.within(200,299));",
+                  "pm.test('Response is JSON',()=>pm.response.to.be.json);",
+                  "const a=pm.response.json().products||[]; if(a[0]){pm.environment.set('product_id',a[0].id); if(a[0].variants&&a[0].variants[0]) pm.environment.set('variant_id',a[0].variants[0].id);}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Search products",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-publishable-api-key",
+                "value": "{{publishable_key}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/store/products/search?q={{search_query}}&limit=20"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx',()=>pm.expect(pm.response.code).to.be.within(200,299));",
+                  "pm.test('Response is JSON',()=>pm.response.to.be.json);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get product",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-publishable-api-key",
+                "value": "{{publishable_key}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/store/products/{{product_id}}?region_id={{region_id}}&fields=*variants.calculated_price,+variants.inventory_quantity,+variants.metadata,+metadata"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx',()=>pm.expect(pm.response.code).to.be.within(200,299));",
+                  "pm.test('Response is JSON',()=>pm.response.to.be.json);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List variants",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-publishable-api-key",
+                "value": "{{publishable_key}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/store/product-variants?limit=100&fields=*calculated_price,+inventory_quantity,+metadata"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx',()=>pm.expect(pm.response.code).to.be.within(200,299));",
+                  "pm.test('Response is JSON',()=>pm.response.to.be.json);",
+                  "const a=pm.response.json().variants||[]; if(a[0]) pm.environment.set('variant_id',a[0].id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get variant",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-publishable-api-key",
+                "value": "{{publishable_key}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/store/product-variants/{{variant_id}}?fields=*calculated_price,+inventory_quantity,+metadata"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx',()=>pm.expect(pm.response.code).to.be.within(200,299));",
+                  "pm.test('Response is JSON',()=>pm.response.to.be.json);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List categories",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-publishable-api-key",
+                "value": "{{publishable_key}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/store/product-categories?limit=100"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx',()=>pm.expect(pm.response.code).to.be.within(200,299));",
+                  "pm.test('Response is JSON',()=>pm.response.to.be.json);",
+                  "const a=pm.response.json().product_categories||[]; if(a[0]) pm.environment.set('category_id',a[0].id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get category",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-publishable-api-key",
+                "value": "{{publishable_key}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/store/product-categories/{{category_id}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx',()=>pm.expect(pm.response.code).to.be.within(200,299));",
+                  "pm.test('Response is JSON',()=>pm.response.to.be.json);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List collections",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-publishable-api-key",
+                "value": "{{publishable_key}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/store/collections?limit=100"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx',()=>pm.expect(pm.response.code).to.be.within(200,299));",
+                  "pm.test('Response is JSON',()=>pm.response.to.be.json);",
+                  "const a=pm.response.json().collections||[]; if(a[0]) pm.environment.set('collection_id',a[0].id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get collection",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-publishable-api-key",
+                "value": "{{publishable_key}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/store/collections/{{collection_id}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx',()=>pm.expect(pm.response.code).to.be.within(200,299));",
+                  "pm.test('Response is JSON',()=>pm.response.to.be.json);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List product types",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-publishable-api-key",
+                "value": "{{publishable_key}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/store/product-types?limit=100"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx',()=>pm.expect(pm.response.code).to.be.within(200,299));",
+                  "pm.test('Response is JSON',()=>pm.response.to.be.json);",
+                  "const a=pm.response.json().product_types||[]; if(a[0]) pm.environment.set('product_type_id',a[0].id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get product type",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-publishable-api-key",
+                "value": "{{publishable_key}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/store/product-types/{{product_type_id}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx',()=>pm.expect(pm.response.code).to.be.within(200,299));",
+                  "pm.test('Response is JSON',()=>pm.response.to.be.json);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List product tags",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-publishable-api-key",
+                "value": "{{publishable_key}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/store/product-tags?limit=100"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx',()=>pm.expect(pm.response.code).to.be.within(200,299));",
+                  "pm.test('Response is JSON',()=>pm.response.to.be.json);",
+                  "const a=pm.response.json().product_tags||[]; if(a[0]) pm.environment.set('product_tag_id',a[0].id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get product tag",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-publishable-api-key",
+                "value": "{{publishable_key}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/store/product-tags/{{product_tag_id}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx',()=>pm.expect(pm.response.code).to.be.within(200,299));",
+                  "pm.test('Response is JSON',()=>pm.response.to.be.json);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List product options",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-publishable-api-key",
+                "value": "{{publishable_key}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/store/product-options?limit=100"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx',()=>pm.expect(pm.response.code).to.be.within(200,299));",
+                  "pm.test('Response is JSON',()=>pm.response.to.be.json);",
+                  "const a=pm.response.json().product_options||[]; if(a[0]) pm.environment.set('product_option_id',a[0].id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get product option",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-publishable-api-key",
+                "value": "{{publishable_key}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/store/product-options/{{product_option_id}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx',()=>pm.expect(pm.response.code).to.be.within(200,299));",
+                  "pm.test('Response is JSON',()=>pm.response.to.be.json);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List currencies",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-publishable-api-key",
+                "value": "{{publishable_key}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/store/currencies?limit=100"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx',()=>pm.expect(pm.response.code).to.be.within(200,299));",
+                  "pm.test('Response is JSON',()=>pm.response.to.be.json);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get CLP currency",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-publishable-api-key",
+                "value": "{{publishable_key}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/store/currencies/clp"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx',()=>pm.expect(pm.response.code).to.be.within(200,299));",
+                  "pm.test('Response is JSON',()=>pm.response.to.be.json);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get region",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-publishable-api-key",
+                "value": "{{publishable_key}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/store/regions/{{region_id}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx',()=>pm.expect(pm.response.code).to.be.within(200,299));",
+                  "pm.test('Response is JSON',()=>pm.response.to.be.json);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List locales",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-publishable-api-key",
+                "value": "{{publishable_key}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/store/locales"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx',()=>pm.expect(pm.response.code).to.be.within(200,299));",
+                  "pm.test('Response is JSON',()=>pm.response.to.be.json);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List payment providers",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-publishable-api-key",
+                "value": "{{publishable_key}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/store/payment-providers?region_id={{region_id}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx',()=>pm.expect(pm.response.code).to.be.within(200,299));",
+                  "pm.test('Response is JSON',()=>pm.response.to.be.json);",
+                  "const a=pm.response.json().payment_providers||[]; if(a[0]) pm.environment.set('payment_provider_id',a[0].id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List return reasons",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-publishable-api-key",
+                "value": "{{publishable_key}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/store/return-reasons?limit=100"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx',()=>pm.expect(pm.response.code).to.be.within(200,299));",
+                  "pm.test('Response is JSON',()=>pm.response.to.be.json);",
+                  "const a=pm.response.json().return_reasons||[]; if(a[0]) pm.environment.set('return_reason_id',a[0].id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get return reason",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-publishable-api-key",
+                "value": "{{publishable_key}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/store/return-reasons/{{return_reason_id}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx',()=>pm.expect(pm.response.code).to.be.within(200,299));",
+                  "pm.test('Response is JSON',()=>pm.response.to.be.json);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "02 - Customer account",
+      "description": "Registration, login, cookie session, profile, and address endpoints.",
+      "item": [
+        {
+          "name": "Register auth identity",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/auth/customer/emailpass/register",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{customer_email}}\",\n  \"password\": \"{{customer_password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx',()=>pm.expect(pm.response.code).to.be.within(200,299));",
+                  "pm.test('Response is JSON',()=>pm.response.to.be.json);",
+                  "const d=pm.response.json(); if(d.token) pm.environment.set('registration_token',d.token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create customer",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-publishable-api-key",
+                "value": "{{publishable_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/store/customers",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{customer_email}}\",\n  \"first_name\": \"Postman\",\n  \"last_name\": \"Tester\",\n  \"phone\": \"+56911111111\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{registration_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx',()=>pm.expect(pm.response.code).to.be.within(200,299));",
+                  "pm.test('Response is JSON',()=>pm.response.to.be.json);",
+                  "const d=pm.response.json().customer; if(d) pm.environment.set('customer_id',d.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login customer",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/auth/customer/emailpass",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{customer_email}}\",\n  \"password\": \"{{customer_password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx',()=>pm.expect(pm.response.code).to.be.within(200,299));",
+                  "pm.test('Response is JSON',()=>pm.response.to.be.json);",
+                  "const d=pm.response.json(); if(d.token) pm.environment.set('customer_token',d.token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create session",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{base_url}}/auth/session",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{customer_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx',()=>pm.expect(pm.response.code).to.be.within(200,299));",
+                  "pm.test('Response is JSON',()=>pm.response.to.be.json);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get current customer",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-publishable-api-key",
+                "value": "{{publishable_key}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/store/customers/me?fields=*addresses"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx',()=>pm.expect(pm.response.code).to.be.within(200,299));",
+                  "pm.test('Response is JSON',()=>pm.response.to.be.json);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update current customer",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-publishable-api-key",
+                "value": "{{publishable_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/store/customers/me?fields=*addresses",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"first_name\": \"Postman\",\n  \"last_name\": \"Banned Cards Tester\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx',()=>pm.expect(pm.response.code).to.be.within(200,299));",
+                  "pm.test('Response is JSON',()=>pm.response.to.be.json);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create address",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-publishable-api-key",
+                "value": "{{publishable_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/store/customers/me/addresses?fields=*addresses",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"address_name\": \"Postman Chile\",\n  \"first_name\": \"Postman\",\n  \"last_name\": \"Tester\",\n  \"address_1\": \"Av. Providencia 1234\",\n  \"city\": \"Santiago\",\n  \"province\": \"Region Metropolitana\",\n  \"postal_code\": \"7500000\",\n  \"country_code\": \"cl\",\n  \"phone\": \"+56911111111\",\n  \"is_default_shipping\": true,\n  \"is_default_billing\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx',()=>pm.expect(pm.response.code).to.be.within(200,299));",
+                  "pm.test('Response is JSON',()=>pm.response.to.be.json);",
+                  "const a=(pm.response.json().customer||{}).addresses||[]; if(a.length) pm.environment.set('address_id',a[a.length-1].id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List addresses",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-publishable-api-key",
+                "value": "{{publishable_key}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/store/customers/me/addresses?limit=100"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx',()=>pm.expect(pm.response.code).to.be.within(200,299));",
+                  "pm.test('Response is JSON',()=>pm.response.to.be.json);",
+                  "const a=pm.response.json().addresses||[]; if(a[0]) pm.environment.set('address_id',a[0].id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get address",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-publishable-api-key",
+                "value": "{{publishable_key}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/store/customers/me/addresses/{{address_id}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx',()=>pm.expect(pm.response.code).to.be.within(200,299));",
+                  "pm.test('Response is JSON',()=>pm.response.to.be.json);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update address",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-publishable-api-key",
+                "value": "{{publishable_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/store/customers/me/addresses/{{address_id}}?fields=*addresses",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"address_name\": \"Postman Chile Updated\",\n  \"city\": \"Santiago\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx',()=>pm.expect(pm.response.code).to.be.within(200,299));",
+                  "pm.test('Response is JSON',()=>pm.response.to.be.json);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete address",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "x-publishable-api-key",
+                "value": "{{publishable_key}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/store/customers/me/addresses/{{address_id}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx',()=>pm.expect(pm.response.code).to.be.within(200,299));",
+                  "pm.test('Response is JSON',()=>pm.response.to.be.json);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Logout session",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{base_url}}/auth/session"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx',()=>pm.expect(pm.response.code).to.be.within(200,299));",
+                  "pm.test('Response is JSON',()=>pm.response.to.be.json);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "03 - Cart and checkout",
+      "description": "Run sequentially with a sellable variant. Shipping and payment require configured providers.",
+      "item": [
+        {
+          "name": "Create cart",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-publishable-api-key",
+                "value": "{{publishable_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/store/carts",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"region_id\": \"{{region_id}}\",\n  \"email\": \"{{customer_email}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx',()=>pm.expect(pm.response.code).to.be.within(200,299));",
+                  "pm.test('Response is JSON',()=>pm.response.to.be.json);",
+                  "const d=pm.response.json().cart; if(d) pm.environment.set('cart_id',d.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get cart",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-publishable-api-key",
+                "value": "{{publishable_key}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/store/carts/{{cart_id}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx',()=>pm.expect(pm.response.code).to.be.within(200,299));",
+                  "pm.test('Response is JSON',()=>pm.response.to.be.json);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update cart addresses",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-publishable-api-key",
+                "value": "{{publishable_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/store/carts/{{cart_id}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{customer_email}}\",\n  \"shipping_address\": {\n    \"first_name\": \"Postman\",\n    \"last_name\": \"Tester\",\n    \"address_1\": \"Av. Providencia 1234\",\n    \"city\": \"Santiago\",\n    \"province\": \"Region Metropolitana\",\n    \"postal_code\": \"7500000\",\n    \"country_code\": \"cl\",\n    \"phone\": \"+56911111111\"\n  },\n  \"billing_address\": {\n    \"first_name\": \"Postman\",\n    \"last_name\": \"Tester\",\n    \"address_1\": \"Av. Providencia 1234\",\n    \"city\": \"Santiago\",\n    \"province\": \"Region Metropolitana\",\n    \"postal_code\": \"7500000\",\n    \"country_code\": \"cl\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx',()=>pm.expect(pm.response.code).to.be.within(200,299));",
+                  "pm.test('Response is JSON',()=>pm.response.to.be.json);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Attach customer",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-publishable-api-key",
+                "value": "{{publishable_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/store/carts/{{cart_id}}/customer",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx',()=>pm.expect(pm.response.code).to.be.within(200,299));",
+                  "pm.test('Response is JSON',()=>pm.response.to.be.json);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Add line item",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-publishable-api-key",
+                "value": "{{publishable_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/store/carts/{{cart_id}}/line-items",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"variant_id\": \"{{variant_id}}\",\n  \"quantity\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx',()=>pm.expect(pm.response.code).to.be.within(200,299));",
+                  "pm.test('Response is JSON',()=>pm.response.to.be.json);",
+                  "const a=(pm.response.json().cart||{}).items||[]; const x=a.find(v=>v.variant_id===pm.environment.get('variant_id')); if(x) pm.environment.set('line_item_id',x.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update line item",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-publishable-api-key",
+                "value": "{{publishable_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/store/carts/{{cart_id}}/line-items/{{line_item_id}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"quantity\": 2\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx',()=>pm.expect(pm.response.code).to.be.within(200,299));",
+                  "pm.test('Response is JSON',()=>pm.response.to.be.json);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Calculate taxes",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-publishable-api-key",
+                "value": "{{publishable_key}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/store/carts/{{cart_id}}/taxes"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx',()=>pm.expect(pm.response.code).to.be.within(200,299));",
+                  "pm.test('Response is JSON',()=>pm.response.to.be.json);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Add promotion",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-publishable-api-key",
+                "value": "{{publishable_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/store/carts/{{cart_id}}/promotions",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"promo_codes\": [\n    \"{{promotion_code}}\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx',()=>pm.expect(pm.response.code).to.be.within(200,299));",
+                  "pm.test('Response is JSON',()=>pm.response.to.be.json);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Remove promotion",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "x-publishable-api-key",
+                "value": "{{publishable_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/store/carts/{{cart_id}}/promotions",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"promo_codes\": [\n    \"{{promotion_code}}\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx',()=>pm.expect(pm.response.code).to.be.within(200,299));",
+                  "pm.test('Response is JSON',()=>pm.response.to.be.json);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List shipping options",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-publishable-api-key",
+                "value": "{{publishable_key}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/store/shipping-options?cart_id={{cart_id}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx',()=>pm.expect(pm.response.code).to.be.within(200,299));",
+                  "pm.test('Response is JSON',()=>pm.response.to.be.json);",
+                  "const a=pm.response.json().shipping_options||[]; if(a[0]) pm.environment.set('shipping_option_id',a[0].id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Calculate shipping option",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-publishable-api-key",
+                "value": "{{publishable_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/store/shipping-options/{{shipping_option_id}}/calculate",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cart_id\": \"{{cart_id}}\",\n  \"data\": {}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx',()=>pm.expect(pm.response.code).to.be.within(200,299));",
+                  "pm.test('Response is JSON',()=>pm.response.to.be.json);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Add shipping method",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-publishable-api-key",
+                "value": "{{publishable_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/store/carts/{{cart_id}}/shipping-methods",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"option_id\": \"{{shipping_option_id}}\",\n  \"data\": {}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx',()=>pm.expect(pm.response.code).to.be.within(200,299));",
+                  "pm.test('Response is JSON',()=>pm.response.to.be.json);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create payment collection",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-publishable-api-key",
+                "value": "{{publishable_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/store/payment-collections",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cart_id\": \"{{cart_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx',()=>pm.expect(pm.response.code).to.be.within(200,299));",
+                  "pm.test('Response is JSON',()=>pm.response.to.be.json);",
+                  "const d=pm.response.json().payment_collection; if(d) pm.environment.set('payment_collection_id',d.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create payment session",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-publishable-api-key",
+                "value": "{{publishable_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/store/payment-collections/{{payment_collection_id}}/payment-sessions",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"provider_id\": \"{{payment_provider_id}}\",\n  \"data\": {}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx',()=>pm.expect(pm.response.code).to.be.within(200,299));",
+                  "pm.test('Response is JSON',()=>pm.response.to.be.json);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Complete cart",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-publishable-api-key",
+                "value": "{{publishable_key}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/store/carts/{{cart_id}}/complete"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx',()=>pm.expect(pm.response.code).to.be.within(200,299));",
+                  "pm.test('Response is JSON',()=>pm.response.to.be.json);",
+                  "const d=pm.response.json(); const x=d.order||(d.type==='order'?d:null); if(x&&x.id) pm.environment.set('order_id',x.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete line item",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "x-publishable-api-key",
+                "value": "{{publishable_key}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/store/carts/{{cart_id}}/line-items/{{line_item_id}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx',()=>pm.expect(pm.response.code).to.be.within(200,299));",
+                  "pm.test('Response is JSON',()=>pm.response.to.be.json);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "04 - Orders",
+      "description": "Authenticated customer order endpoints.",
+      "item": [
+        {
+          "name": "List orders",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-publishable-api-key",
+                "value": "{{publishable_key}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/store/orders?limit=100"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx',()=>pm.expect(pm.response.code).to.be.within(200,299));",
+                  "pm.test('Response is JSON',()=>pm.response.to.be.json);",
+                  "const a=pm.response.json().orders||[]; if(a[0]){pm.environment.set('order_id',a[0].id); if(a[0].items&&a[0].items[0]) pm.environment.set('order_line_item_id',a[0].items[0].id);}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get order",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-publishable-api-key",
+                "value": "{{publishable_key}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/store/orders/{{order_id}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx',()=>pm.expect(pm.response.code).to.be.within(200,299));",
+                  "pm.test('Response is JSON',()=>pm.response.to.be.json);",
+                  "const d=pm.response.json().order; if(d&&d.items&&d.items[0]) pm.environment.set('order_line_item_id',d.items[0].id);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "05 - Returns and transfers (manual)",
+      "description": "Requires a fulfilled order, return shipping option, or transfer token.",
+      "item": [
+        {
+          "name": "Create return",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-publishable-api-key",
+                "value": "{{publishable_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/store/returns",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"order_id\": \"{{order_id}}\",\n  \"items\": [\n    {\n      \"id\": \"{{order_line_item_id}}\",\n      \"quantity\": 1,\n      \"reason_id\": \"{{return_reason_id}}\"\n    }\n  ],\n  \"return_shipping\": {\n    \"option_id\": \"{{return_shipping_option_id}}\"\n  },\n  \"note\": \"Postman return test\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx',()=>pm.expect(pm.response.code).to.be.within(200,299));",
+                  "pm.test('Response is JSON',()=>pm.response.to.be.json);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Request order transfer",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-publishable-api-key",
+                "value": "{{publishable_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/store/orders/{{order_id}}/transfer/request",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"description\": \"Postman transfer test\",\n  \"update_order_email\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx',()=>pm.expect(pm.response.code).to.be.within(200,299));",
+                  "pm.test('Response is JSON',()=>pm.response.to.be.json);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cancel order transfer",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-publishable-api-key",
+                "value": "{{publishable_key}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/store/orders/{{order_id}}/transfer/cancel"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx',()=>pm.expect(pm.response.code).to.be.within(200,299));",
+                  "pm.test('Response is JSON',()=>pm.response.to.be.json);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Accept order transfer",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-publishable-api-key",
+                "value": "{{publishable_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/store/orders/{{order_id}}/transfer/accept",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"{{order_transfer_token}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx',()=>pm.expect(pm.response.code).to.be.within(200,299));",
+                  "pm.test('Response is JSON',()=>pm.response.to.be.json);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Decline order transfer",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-publishable-api-key",
+                "value": "{{publishable_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/store/orders/{{order_id}}/transfer/decline",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"{{order_transfer_token}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx',()=>pm.expect(pm.response.code).to.be.within(200,299));",
+                  "pm.test('Response is JSON',()=>pm.response.to.be.json);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
