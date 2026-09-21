@@ -20,7 +20,8 @@
     "infra:down": "docker compose down",
     "infra:logs": "docker compose logs -f postgres redis minio minio-init",
     "test": "node --test -r ts-node/register tests/*.test.cjs",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "sets:sync": "medusa exec ./src/scripts/sync-set-directory.ts"
   },
   "dependencies": {
     "@medusajs/admin-sdk": "2.21.0",

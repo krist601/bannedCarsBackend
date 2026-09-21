@@ -30,7 +30,7 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
   })
   const printingIds = printings.map(printing => printing.id)
   const [sets, listings] = await Promise.all([
-    catalog.listCardSets({}, { take: 1000 }),
+    printings.length ? catalog.listCardSets({ id: [...new Set(printings.map(printing => printing.set_id))] }, { take: 100 }) : Promise.resolve([]),
     printingIds.length ? catalog.listCardListings({ printing_id: printingIds }, { take: 1000 }) : Promise.resolve([])
   ])
   res.json({

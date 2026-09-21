@@ -110,3 +110,13 @@ Run `pnpm test` to verify downloads, idempotency, source-host restrictions, and 
 API access does not itself grant commercial rights to the underlying card art, so confirm production use with Wizards' policies and your authorized distributor before launch. Preserve original card notices and attribution.
 
 Never commit Mercado Pago access tokens, webhook secrets, database passwords, or production signing secrets. A Mercado Pago provider must create payment sessions server-side, verify webhook authenticity, handle duplicate events idempotently, and update Medusa payment state through its payment module. The browser must never decide that a payment succeeded.
+
+## Set directory and hottest singles
+
+Run `pnpm sets:sync` once to import all Scryfall set metadata and store SVG icons using the configured File Module. The `sync-set-directory` scheduled job refreshes this daily while a shared/worker Medusa process is running. Keep the existing S3/MinIO/R2 configuration and persistent storage enabled. New set metadata and icons appear without a frontend deployment. Missing icons use a frontend fallback and retry on the next sync. A failed upstream fetch preserves the previously saved directory. Set metadata sync does not import card printings or create stock.
+
+- `GET /store/tcg/sets?limit=10&offset=0`: flat page of up to ten sets plus `offset`, `nextOffset`, `previousOffset`, and `latestSetCodes`.
+- `q=<name-or-code>` searches all visible sets before pagination. Only `metadata.isVisible === true` is included; no parent/block visibility gating applies to this endpoint.
+- `GET /store/tcg/hottest`: variant IDs ranked by paid units in orders created in the last 30 days, minus received returns, excluding canceled orders and scoped to the Store API key's sales channels. No customer or order details are exposed.
+
+The storefront list has no block divisions. Sets sort newest first, with undated sets last. Next/previous controls replace the visible page rather than appending rows. Upcoming releases are labeled. No inventory counts are included. Latest releases uses the two newest released expansion/core/draft-innovation sets and their related products. The existing card importer preserves directory/icon metadata.
