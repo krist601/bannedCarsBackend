@@ -1,3 +1,4 @@
+import { cataloguePage } from "../../../../lib/catalogue-page"
 import type { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
 import { projectCardCatalogue, type CatalogueListing, type CataloguePrinting, type CatalogueSet } from "../../../../lib/card-catalogue-projection"
 
@@ -23,6 +24,38 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
   }
   const limit = Math.min(requestedLimit, 100)
   const catalog = req.scope.resolve("tcgCatalog") as TcgCatalogService
+  if (req.query.grouped === "true") {
+    const showOutOfStock = req.query.showOutOfStock
+    if (showOutOfStock !== undefined && showOutOfStock !== "true" && showOutOfStock !== "false") {
+      res.status(400).json({ message: "showOutOfStock must be true or false" }); return
+    }
+    const sort = req.query.sort
+    if (sort !== undefined && sort !== "added") { res.status(400).json({ message: "Invalid sort" }); return }
+    const q = req.query.q
+    const sets = req.query.sets
+    const ranked = req.query.ranked
+    if ([q, sets, ranked].some(value => value !== undefined && typeof value !== "string")) {
+      res.status(400).json({ message: "Invalid catalogue filters" }); return
+    }
+    const all: CataloguePrinting[] = []
+    for (let skip = 0; ; skip += 500) {
+      const [batch] = await catalog.listAndCountCardPrintings({}, { skip, take: 500, order: { id: "ASC" } })
+      all.push(...batch); if (batch.length < 500) break
+    }
+    const projected: ReturnType<typeof projectCardCatalogue> = []
+    for (let start = 0; start < all.length; start += 100) {
+      const batch = all.slice(start, start + 100)
+      const sets = await catalog.listCardSets({ id: [...new Set(batch.map(item => item.set_id))] }, { take: 100 })
+      const listings: CatalogueListing[] = []
+      for (let skip = 0; ; skip += 1000) {
+        const rows = await catalog.listCardListings({ printing_id: batch.map(item => item.id) }, { skip, take: 1000, order: { id: "ASC" } })
+        listings.push(...rows); if (rows.length < 1000) break
+      }
+      projected.push(...projectCardCatalogue(batch, sets, listings))
+    }
+    res.json(cataloguePage(projected, { offset, limit, sort: sort as "added" | undefined, showOutOfStock: showOutOfStock !== "false", q: q as string | undefined, sets: sets === undefined ? undefined : String(sets).split(","), rankedIds: ranked === undefined ? undefined : String(ranked).split(",") }))
+    return
+  }
   const [printings, count] = await catalog.listAndCountCardPrintings({}, {
     skip: offset,
     take: limit,

@@ -1,4 +1,5 @@
 export type CataloguePrinting = {
+  created_at?: Date | string | null;
   id: string;
   set_id: string;
   collector_number: string;
@@ -79,6 +80,7 @@ export function projectCardCatalogue(
       return {
         id: listing?.variant_id ?? `printing:${printing.id}`,
         printing_id: printing.id,
+        added_at: printing.created_at ? new Date(printing.created_at).toISOString() : null,
         listing_id: listing?.id ?? null,
         variant_id: isSellable ? (listing?.variant_id ?? null) : null,
         name: printing.name,
