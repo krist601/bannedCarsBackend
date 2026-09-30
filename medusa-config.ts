@@ -2,6 +2,24 @@ import { defineConfig, loadEnv } from "@medusajs/framework/utils"
 
 loadEnv(process.env.NODE_ENV || "development", process.cwd())
 
+// HTTP-only loopback development must opt in; deployed stores retain secure defaults.
+const localSession = process.env.LOCAL_HTTP_SESSION === "true"
+if (localSession) {
+  const origins = [process.env.STORE_CORS || "http://localhost:3000", process.env.AUTH_CORS || "http://localhost:3000,http://localhost:9000"].flatMap(value => value.split(","))
+  if (!origins.every(origin => { try { const url = new URL(origin.trim()); return url.protocol === "http:" && ["localhost", "127.0.0.1", "[::1]"].includes(url.hostname) } catch { return false } })) throw new Error("LOCAL_HTTP_SESSION is only allowed with HTTP loopback CORS origins")
+}
+const googleEnabled = Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET && process.env.GOOGLE_CALLBACK_URL)
+const authModule = googleEnabled ? [{
+  resolve: "@medusajs/medusa/auth",
+  dependencies: ["cache", "logger"],
+  options: { providers: [
+    { resolve: "@medusajs/medusa/auth-emailpass", id: "emailpass" },
+    { resolve: "@medusajs/medusa/auth-google", id: "google", options: {
+      clientId: process.env.GOOGLE_CLIENT_ID, clientSecret: process.env.GOOGLE_CLIENT_SECRET, callbackUrl: process.env.GOOGLE_CALLBACK_URL
+    } }
+  ] }
+}] : []
+
 const fileModule = process.env.FILE_STORAGE_DRIVER === "s3" ? [{
   resolve: "@medusajs/medusa/file",
   options: {
@@ -14,6 +32,8 @@ const fileModule = process.env.FILE_STORAGE_DRIVER === "s3" ? [{
         secret_access_key: process.env.S3_SECRET_ACCESS_KEY,
         region: process.env.S3_REGION,
         bucket: process.env.S3_BUCKET,
+        // BucketOwnerEnforced buckets reject every per-object ACL header.
+        acl: false,
         endpoint: process.env.S3_ENDPOINT,
         prefix: process.env.S3_PREFIX || "catalog",
         cache_control: "public, max-age=31536000, immutable",
@@ -27,9 +47,12 @@ const fileModule = process.env.FILE_STORAGE_DRIVER === "s3" ? [{
 
 export default defineConfig({
   projectConfig: {
+    // Google is for customers only; staff authentication remains email/password.
+    ...(localSession ? { cookieOptions: { secure: false, sameSite: "lax" as const, httpOnly: true } } : {}),
     databaseUrl: process.env.DATABASE_URL,
     redisUrl: process.env.REDIS_URL,
     http: {
+      authMethodsPerActor: { user: ["emailpass"], customer: googleEnabled ? ["emailpass", "google"] : ["emailpass"] },
       storeCors: process.env.STORE_CORS || "http://localhost:3000",
       adminCors: process.env.ADMIN_CORS || "http://localhost:9000",
       authCors: process.env.AUTH_CORS || "http://localhost:3000,http://localhost:9000",
@@ -38,5 +61,5 @@ export default defineConfig({
     },
     workerMode: (process.env.WORKER_MODE as "shared" | "server" | "worker") || "shared"
   },
-  modules: [{ resolve: "./src/modules/tcg-catalog" }, ...fileModule]
+  modules: [{ resolve: "./src/modules/tcg-catalog" }, ...fileModule, ...authModule]
 })

@@ -1,0 +1,3 @@
+import type {ExecArgs} from '@medusajs/framework/types';
+import {sealedFinder} from '../lib/cms-sealed-finder';
+export default async function audit({container}:ExecArgs){let code=200;await sealedFinder({scope:container},{status(n:number){code=n;return this;},json(body:any){console.log('FINDER_AUDIT '+JSON.stringify({code,message:body.message,name:body.name,products:body.products?.length,existing:body.products?.filter((p:any)=>p.existing).length,assets:body.assets?.length,tokenIssued:!!body.token}));}},{action:'sealed_find',game:'magic-the-gathering',code:'SOS'});if(code>=400)throw new Error('Finder preview failed');}

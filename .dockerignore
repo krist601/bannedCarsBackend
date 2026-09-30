@@ -1,0 +1,9 @@
+.git
+.github
+node_modules
+.medusa
+.env
+.env.*
+!.env.template
+npm-debug.log*
+pnpm-debug.log*
