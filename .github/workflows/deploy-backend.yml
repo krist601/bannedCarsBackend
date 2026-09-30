@@ -1,0 +1,52 @@
+name: Deploy backend to Lightsail
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-backend-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Check out backend
+        uses: actions/checkout@v4
+
+      - name: Package backend source
+        run: |
+          tar --exclude=.git --exclude=node_modules --exclude=.medusa --exclude='*.log' \
+            -czf "$RUNNER_TEMP/backend.tar.gz" .
+
+      - name: Configure SSH
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.LIGHTSAIL_SSH_PRIVATE_KEY }}
+          KNOWN_HOSTS: ${{ secrets.LIGHTSAIL_KNOWN_HOSTS }}
+        run: |
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/lightsail_deploy
+          chmod 600 ~/.ssh/lightsail_deploy
+          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 644 ~/.ssh/known_hosts
+
+      - name: Upload backend source
+        env:
+          LIGHTSAIL_HOST: ${{ secrets.LIGHTSAIL_HOST }}
+          LIGHTSAIL_USER: ${{ secrets.LIGHTSAIL_USER }}
+        run: |
+          scp -i ~/.ssh/lightsail_deploy "$RUNNER_TEMP/backend.tar.gz" "$LIGHTSAIL_USER@$LIGHTSAIL_HOST:/tmp/banned-cards-backend.tar.gz"
+
+      - name: Migrate, build and restart backend
+        env:
+          LIGHTSAIL_HOST: ${{ secrets.LIGHTSAIL_HOST }}
+          LIGHTSAIL_USER: ${{ secrets.LIGHTSAIL_USER }}
+        run: |
+          ssh -i ~/.ssh/lightsail_deploy "$LIGHTSAIL_USER@$LIGHTSAIL_HOST" \
+            'set -e; mkdir -p /opt/banned-cards/backend; tar -xzf /tmp/banned-cards-backend.tar.gz -C /opt/banned-cards/backend; rm -f /tmp/banned-cards-backend.tar.gz; cd /opt/banned-cards; docker compose up -d --build backend; docker compose ps backend'
