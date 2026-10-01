@@ -1,4 +1,5 @@
 import {getStorefrontSettings,saveStorefrontSettings} from "../../../lib/storefront-settings";
+import { cmsUsers } from "../../../lib/cms-users";
 import { sealedFinder } from "../../../lib/cms-sealed-finder";
 import { getSealed, postSealed } from "../../../lib/cms-sealed";
 import { visibleFilterSets } from "../../../lib/cms-visible-sets";
@@ -46,6 +47,7 @@ export async function GET(
 ) {
   const catalog: Catalog = req.scope.resolve("tcgCatalog");
   const resource = String(req.query.resource || "overview");
+  if (resource === "users") return cmsUsers(req, res);
   const skip = Number(req.query.offset || 0);
   if (!Number.isSafeInteger(skip) || skip < 0) {
     res.status(400).json({ message: "Invalid offset" });
@@ -58,7 +60,7 @@ export async function GET(
     const user = await req.scope
       .resolve(Modules.USER)
       .retrieveUser(req.auth_context.actor_id);
-    res.json({ user: { email: user.email, isAdmin: true } });
+    res.json({ user: { email: user.email, isAdmin: user.metadata?.isAdmin === true } });
     return;
   }
   if (resource === "sets") {
@@ -266,6 +268,7 @@ export async function POST(
   res: MedusaResponse,
 ) {
   if (req.body?.action === "storefront_settings") return saveStorefrontSettings(req,res,req.body);
+  if (["user_save", "user_create"].includes(String(req.body?.action))) return cmsUsers(req,res);
   return handleAction(req, res, req.body);
 }
 
