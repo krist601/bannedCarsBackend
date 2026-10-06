@@ -9,6 +9,7 @@ COPY . .
 RUN pnpm build
 
 FROM node:22-bookworm-slim AS runner
+RUN apt-get update && apt-get install -y --no-install-recommends postgresql-client-15 && rm -rf /var/lib/apt/lists/*
 ENV NODE_ENV=production
 ENV PNPM_HOME=/pnpm
 ENV PATH=$PNPM_HOME:$PATH

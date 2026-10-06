@@ -1,5 +1,10 @@
 import {getStorefrontSettings,saveStorefrontSettings} from "../../../lib/storefront-settings";
 import { cmsUsers } from "../../../lib/cms-users";
+import { cmsBackups } from "../../../lib/cms-backups";
+import { cmsStores, allowedStockChannels, productStoreChannels } from "../../../lib/cms-stores";
+import { previewSetPrices } from "../../../lib/cms-set-prices";
+import { basePrice } from "../../../lib/cms-base-prices";
+import { readPricing, pricingSettings } from "../../../lib/cms-pricing-settings";
 import { sealedFinder } from "../../../lib/cms-sealed-finder";
 import { getSealed, postSealed } from "../../../lib/cms-sealed";
 import { visibleFilterSets } from "../../../lib/cms-visible-sets";
@@ -47,6 +52,9 @@ export async function GET(
 ) {
   const catalog: Catalog = req.scope.resolve("tcgCatalog");
   const resource = String(req.query.resource || "overview");
+  if(resource === "backups") return cmsBackups(req,res);
+  if(resource === "pricing") return pricingSettings(req,res);
+  if (resource === "stores") return cmsStores(req, res);
   if (resource === "users") return cmsUsers(req, res);
   const skip = Number(req.query.offset || 0);
   if (!Number.isSafeInteger(skip) || skip < 0) {
@@ -179,8 +187,8 @@ export async function GET(
         setById,
       ),
     );
-    const count = matching.length;
-    const rows = matching.slice(skip, skip + 30);
+    const locationId = typeof req.query.location_id === "string" ? req.query.location_id : "";
+    const rows = locationId ? matching : matching.slice(skip, skip + 30);
     const inventory = req.scope.resolve(Modules.INVENTORY);
     const query = req.scope.resolve(ContainerRegistrationKeys.QUERY);
     const enriched = await Promise.all(
@@ -197,7 +205,7 @@ export async function GET(
         const item = data[0]?.inventory_items?.[0]?.inventory_item_id;
         const levels = item
           ? await inventory.listInventoryLevels(
-              { inventory_item_id: item },
+              { inventory_item_id: item, ...(locationId ? { location_id: locationId } : {}) },
               { take: 100 },
             )
           : [];
@@ -212,7 +220,8 @@ export async function GET(
         };
       }),
     );
-    res.json({ rows: enriched, count });
+    const visible = locationId ? enriched.filter(row => row.levels.some(level => Number(level.available_quantity) > 0 || Number(level.reserved_quantity) > 0)) : enriched;
+    res.json({ rows: locationId ? visible.slice(skip, skip + 30) : visible, count: locationId ? visible.length : matching.length });
     return;
   }
   if (resource === "orders") {
@@ -267,6 +276,10 @@ export async function POST(
   req: AuthenticatedMedusaRequest<Record<string, unknown>>,
   res: MedusaResponse,
 ) {
+  if(["backup_create","backup_restore","backup_resume"].includes(String(req.body?.action || ""))) return cmsBackups(req,res);
+  if(req.body?.action === "pricing_settings") return pricingSettings(req,res);
+  if (req.body?.action === "set_prices") return previewSetPrices(req,res);
+  if (["store_save","warehouse_create"].includes(String(req.body?.action))) return cmsStores(req,res);
   if (req.body?.action === "storefront_settings") return saveStorefrontSettings(req,res,req.body);
   if (["user_save", "user_create"].includes(String(req.body?.action))) return cmsUsers(req,res);
   return handleAction(req, res, req.body);
@@ -322,12 +335,17 @@ async function handleAction(
       const matches = printings.filter(
         (p) => normalizeImportName(p.name) === normalizeImportName(row.name),
       );
-      if (matches.length !== 1) {
+      // Collector numbers are unique within a set. Keep accepting a unique
+      // collector match when a pasted name has a typo or uses a different
+      // apostrophe/split-name spelling; the preview shows the catalog name.
+      const resolved = matches.length === 1 ? matches : printings.length === 1 ? printings : [];
+      if (resolved.length !== 1) {
         row.error =
           "Card name and collector number must match exactly one printing in this set.";
         continue;
       }
-      row.printing_id = matches[0].id;
+      row.printing_id = resolved[0].id;
+      if (matches.length !== 1) row.warning = `Catalog name: ${resolved[0].name}`;
     }
     if (
       body.action === "stock_import_preview" ||
@@ -503,6 +521,8 @@ async function handleAction(
     let price: number;
     try {
       price = positiveInteger(body.price_clp, "Price", 100000000);
+      const settings = await readPricing(req.scope);
+      if(price < settings.minimum) throw new Error(`Minimum card price is CLP ${settings.minimum}.`);
     } catch (error) {
       res.status(400).json({ message: (error as Error).message });
       return;
@@ -545,7 +565,7 @@ async function handleAction(
         await catalog.updateCardListings({
           id: listing.id,
           price_clp: price,
-          metadata: { ...listing.metadata, price_pending: false },
+          metadata: { ...listing.metadata, price_pending: false, price_source: "custom" },
         });
         res.json({ ok: true });
       });
@@ -628,7 +648,7 @@ async function handleAction(
       ) || [];
     if (!subtract && channels.length)
       await linkSalesChannelsToStockLocationWorkflow(req.scope).run({
-        input: { id: body.location_id, add: channels, remove: [] },
+        input: { id: body.location_id, add: await allowedStockChannels(req.scope,body.location_id,channels), remove: [] },
       });
     const locationId = body.location_id;
     await req.scope
@@ -735,6 +755,10 @@ async function handleAction(
     }
     const internalSku = `BC-${randomUUID()}`;
     const printing = await catalog.retrieveCardPrinting(body.printing_id);
+    const customPrice = body.price_clp !== null && body.price_clp !== undefined;
+    const pricing = await readPricing(req.scope);
+    if (!customPrice) price = basePrice(printing, String(body.finish),pricing) ?? 0;
+    else if(price < pricing.minimum){res.status(400).json({message:`Minimum card price is CLP ${pricing.minimum}.`});return;}
     await req.scope
       .resolve(Modules.STOCK_LOCATION)
       .retrieveStockLocation(body.location_id);
@@ -752,7 +776,7 @@ async function handleAction(
       return;
     }
     await linkSalesChannelsToStockLocationWorkflow(req.scope).run({
-      input: { id: body.location_id, add: [channel.id], remove: [] },
+      input: { id: body.location_id, add: await allowedStockChannels(req.scope,body.location_id,[channel.id]), remove: [] },
     });
     const { result: products } = await createProductsWorkflow(req.scope).run({
       input: {
@@ -764,7 +788,7 @@ async function handleAction(
             handle: internalSku.toLowerCase(),
             status: price > 0 ? ProductStatus.PUBLISHED : ProductStatus.DRAFT,
             shipping_profile_id: profile.id,
-            sales_channels: [{ id: channel.id }],
+            sales_channels: await productStoreChannels(req.scope,channel.id),
             thumbnail: printing.image_url || undefined,
             metadata: { printing_id: printing.id, kind: "single" },
             options: [{ title: "Card", values: ["Default"] }],
@@ -819,6 +843,7 @@ async function handleAction(
         metadata: {
           received_by: req.auth_context.actor_id,
           price_pending: price === 0,
+          price_source: customPrice ? "custom" : "scryfall",
         },
       });
     } catch (error) {

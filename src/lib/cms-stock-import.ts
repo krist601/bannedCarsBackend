@@ -8,6 +8,7 @@ export type ImportRow = {
   language: string;
   printing_id?: string;
   error?: string;
+  warning?: string;
 };
 export function parseStockImport(value: unknown): ImportRow[] {
   if (typeof value !== "string" || value.length > 50000)
@@ -29,7 +30,7 @@ export function parseStockImport(value: unknown): ImportRow[] {
       language: "English",
     };
     const match = text.match(
-      /^(\d+)\s*[x×]\s+(.+?)\s+\(([a-z0-9]+)\)\s+#?([^\s*]+)(.*)$/i,
+      /^(\d+)\s*(?:[x×]\s+)?(.+?)\s+\(([a-z0-9]+)\)\s+#?([^\s*]+)(.*)$/i,
     );
     if (!match) return { ...row, error: "Use: 2x Card name (SET) 123 *F* S" };
     row.quantity = Number(match[1]);

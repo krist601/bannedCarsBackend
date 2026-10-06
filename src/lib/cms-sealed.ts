@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { allowedStockChannels, productStoreChannels } from "./cms-stores";
 import { Modules, ContainerRegistrationKeys } from "@medusajs/framework/utils";
 import {
   createProductsWorkflow,
@@ -189,7 +190,7 @@ export async function postSealed(req: any, res: any, body: any) {
               ...fields,
               handle: `sealed-${randomUUID()}`,
               shipping_profile_id: profile.id,
-              sales_channels: [{ id: channel.id }],
+              sales_channels: await productStoreChannels(req.scope,channel.id),
               category_ids: [...new Set([root.id, body.category_id])],
               metadata: {
                 kind: "sealed",
@@ -386,7 +387,7 @@ export async function postSealed(req: any, res: any, body: any) {
                     {
                       input: {
                         id: body.location_id,
-                        add: channels,
+                        add: await allowedStockChannels(req.scope,body.location_id,channels),
                         remove: [],
                       },
                     },

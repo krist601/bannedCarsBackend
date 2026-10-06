@@ -12,9 +12,10 @@ export function cmsPermissions(user: any) {
   const saved = user?.metadata?.cmsAccess;
   return {
     admin,
+    canCreateSealed: admin || saved?.canCreateSealed === true,
     enabled: admin || saved?.enabled === true,
     sections: admin
-      ? [...CMS_SECTIONS, "users"]
+      ? [...CMS_SECTIONS, "users", "stores", "pricing", "backups"]
       : CMS_SECTIONS.filter(
           (s) => Array.isArray(saved?.sections) && saved.sections.includes(s),
         ),
@@ -26,6 +27,9 @@ export function cmsPermissions(user: any) {
   };
 }
 const reads: Record<string, string[]> = {
+  backups: ["backups"],
+  stores: ["stores"],
+  pricing: ["pricing"],
   me: [],
   locations: [],
   users: ["users"],
@@ -39,6 +43,13 @@ const reads: Record<string, string[]> = {
   orders: ["orders"],
 };
 const writes: Record<string, string[]> = {
+  backup_create: ["backups"],
+  backup_restore: ["backups"],
+  backup_resume: ["backups"],
+  store_save: ["stores"],
+  pricing_settings: ["pricing"],
+  warehouse_create: ["stores"],
+  set_prices: ["sets"],
   user_save: ["users"],
   user_create: ["users"],
   storefront_settings: ["storefront"],
@@ -70,6 +81,7 @@ export function canAccessCms(
 ) {
   const p = cmsPermissions(user);
   if (!p.enabled) return false;
+  if (method !== "GET" && ["sealed_create", "sealed_accept"].includes(key) && !p.canCreateSealed) return false;
   const sections = (method === "GET" ? reads : writes)[key];
   if (
     !sections ||

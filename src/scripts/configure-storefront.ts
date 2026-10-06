@@ -48,7 +48,8 @@ export default async function configureStorefront({ container, args }: ExecArgs)
     publishableKey = result[0].token
 
     const salesChannels = container.resolve(Modules.SALES_CHANNEL) as SalesChannelService
-    const channels = await salesChannels.listSalesChannels({}, { take: 100 })
+    const [store] = await container.resolve(Modules.STORE).listStores()
+    const channels = await salesChannels.listSalesChannels({id:store.default_sales_channel_id}, { take: 1 })
     if (channels.length) {
       await linkSalesChannelsToApiKeyWorkflow(container).run({
         input: { id: result[0].id, add: channels.map(channel => channel.id), remove: [] }

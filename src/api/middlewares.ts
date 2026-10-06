@@ -1,3 +1,4 @@
+import { backupMaintenanceMiddleware } from "../lib/database-backups";
 import {
   authenticate,
   defineMiddlewares,
@@ -8,8 +9,10 @@ import {
 } from "@medusajs/framework/http";
 import { Modules } from "@medusajs/framework/utils";
 import { cmsPermissions, canAccessCms, scopeWarehouseResponse } from "../lib/cms-permissions";
+import { storeCartGuard } from "../lib/store-warehouse-scope";
 export default defineMiddlewares({
   routes: [
+    { matcher: "*", middlewares: [backupMaintenanceMiddleware] },
     { matcher: "/store/auth/google/complete", method: ["POST"], middlewares: [authenticate("customer", ["bearer"], { allowUnregistered: true })] },
     {
       matcher: "/admin/cms*",
@@ -27,7 +30,7 @@ export default defineMiddlewares({
             );
           const permissions = cmsPermissions(user);
           const key = req.method === "GET" ? String(req.query.resource || "overview") : String((req.body as any)?.action || "");
-          if (!canAccessCms(user, req.method, key, (req.body as any)?.location_id)) {
+          if (!canAccessCms(user, req.method, key, (req.body as any)?.location_id || (req.query as any)?.location_id)) {
             res
               .status(403)
               .json({ message: "You do not have access to this section or warehouse." });
@@ -54,5 +57,6 @@ export default defineMiddlewares({
         next();
       }],
     },
+    { matcher: "/store/carts*", middlewares: [storeCartGuard] },
   ],
 });

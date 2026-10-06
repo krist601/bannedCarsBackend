@@ -1,4 +1,5 @@
 import { cataloguePage } from "../../../../lib/catalogue-page"
+import { scopeCardListings, storeWarehouseIds } from "../../../../lib/store-warehouse-scope"
 import type { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
 import { projectCardCatalogue, type CatalogueListing, type CataloguePrinting, type CatalogueSet } from "../../../../lib/card-catalogue-projection"
 
@@ -24,6 +25,9 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
   }
   const limit = Math.min(requestedLimit, 100)
   const catalog = req.scope.resolve("tcgCatalog") as TcgCatalogService
+  let stockScope;
+  try { stockScope=await storeWarehouseIds(req); }
+  catch(e) { return res.status(403).json({message:(e as Error).message}); }
   if (req.query.grouped === "true") {
     const showOutOfStock = req.query.showOutOfStock
     if (showOutOfStock !== undefined && showOutOfStock !== "true" && showOutOfStock !== "false") {
@@ -51,7 +55,7 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
         const rows = await catalog.listCardListings({ printing_id: batch.map(item => item.id) }, { skip, take: 1000, order: { id: "ASC" } })
         listings.push(...rows); if (rows.length < 1000) break
       }
-      projected.push(...projectCardCatalogue(batch, sets, listings))
+      projected.push(...projectCardCatalogue(batch, sets, await scopeCardListings(req,listings,stockScope)))
     }
     res.json(cataloguePage(projected, { offset, limit, sort: sort as "added" | undefined, showOutOfStock: showOutOfStock !== "false", q: q as string | undefined, sets: sets === undefined ? undefined : String(sets).split(","), rankedIds: ranked === undefined ? undefined : String(ranked).split(",") }))
     return
@@ -67,7 +71,7 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
     printingIds.length ? catalog.listCardListings({ printing_id: printingIds }, { take: 1000 }) : Promise.resolve([])
   ])
   res.json({
-    cards: projectCardCatalogue(printings, sets, listings),
+    cards: projectCardCatalogue(printings, sets, await scopeCardListings(req,listings,stockScope)),
     count,
     offset,
     limit

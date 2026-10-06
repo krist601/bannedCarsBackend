@@ -39,6 +39,7 @@ export async function cmsUsers(req: any, res: any) {
     const access = {
       enabled: b.enabled,
       sections: [...new Set(b.sections)],
+      canCreateSealed: b.canCreateSealed === true,
       warehouseIds: [...new Set(b.warehouseIds)],
     };
     if (b.action === "user_save") {
