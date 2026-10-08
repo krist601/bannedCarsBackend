@@ -11,7 +11,7 @@ export type CataloguePrinting = {
   attributes?: Record<string, unknown> | null;
 };
 
-export type CatalogueSet = { id: string; code: string; name: string };
+export type CatalogueSet = { id: string; code: string; name: string; released_at?: Date | string | null };
 export type CatalogueListing = {
   id: string;
   printing_id: string;
@@ -81,6 +81,7 @@ export function projectCardCatalogue(
         id: listing?.variant_id ?? `printing:${printing.id}`,
         printing_id: printing.id,
         added_at: printing.created_at ? new Date(printing.created_at).toISOString() : null,
+        released_at: set?.released_at ? new Date(set.released_at).toISOString() : null,
         listing_id: listing?.id ?? null,
         variant_id: isSellable ? (listing?.variant_id ?? null) : null,
         name: printing.name,

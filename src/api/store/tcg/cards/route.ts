@@ -34,7 +34,7 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
       res.status(400).json({ message: "showOutOfStock must be true or false" }); return
     }
     const sort = req.query.sort
-    if (sort !== undefined && sort !== "added") { res.status(400).json({ message: "Invalid sort" }); return }
+    if (sort !== undefined && sort !== "added" && sort !== "release") { res.status(400).json({ message: "Invalid sort" }); return }
     const q = req.query.q
     const sets = req.query.sets
     const ranked = req.query.ranked
@@ -57,7 +57,7 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
       }
       projected.push(...projectCardCatalogue(batch, sets, await scopeCardListings(req,listings,stockScope)))
     }
-    res.json(cataloguePage(projected, { offset, limit, sort: sort as "added" | undefined, showOutOfStock: showOutOfStock !== "false", q: q as string | undefined, sets: sets === undefined ? undefined : String(sets).split(","), rankedIds: ranked === undefined ? undefined : String(ranked).split(",") }))
+    res.json(cataloguePage(projected, { offset, limit, sort: sort as "added" | "release" | undefined, showOutOfStock: showOutOfStock !== "false", q: q as string | undefined, sets: sets === undefined ? undefined : String(sets).split(","), rankedIds: ranked === undefined ? undefined : String(ranked).split(",") }))
     return
   }
   const [printings, count] = await catalog.listAndCountCardPrintings({}, {

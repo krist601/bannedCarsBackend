@@ -31,3 +31,7 @@ test('latest added uses creation time before price or stock, keeps full groups a
  assert.equal(cataloguePage(cards,{offset:1,limit:1,sort:'added'}).cards[0].id,'old');
  assert.equal(cataloguePage(cards,{offset:0,limit:1,sort:'added',showOutOfStock:false}).cards[0].id,'old');
 });
+test('release sort orders newest sets first, then most expensive to cheapest',()=>{
+ const cards=[card('oldCheap',{released_at:'2020-01-01T00:00:00.000Z',price_clp:10}),card('oldPricey',{released_at:'2020-01-01T00:00:00.000Z',price_clp:900}),card('newCheap',{released_at:'2026-01-01T00:00:00.000Z',price_clp:5}),card('newPricey',{released_at:'2026-01-01T00:00:00.000Z',price_clp:500})];
+ assert.deepEqual(cataloguePage(cards,{offset:0,limit:10,sort:'release'}).cards.map(c=>c.id),['newPricey','newCheap','oldPricey','oldCheap']);
+});
