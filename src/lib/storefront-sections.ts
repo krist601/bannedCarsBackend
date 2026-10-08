@@ -1,5 +1,6 @@
 export const sectionDefaults = {
   sealed: true,
+  singles: true,
   homeBanner: true,
   homeSealed: true,
   homeSingles: true,
