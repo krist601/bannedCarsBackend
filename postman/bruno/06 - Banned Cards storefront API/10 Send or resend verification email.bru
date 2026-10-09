@@ -1,0 +1,27 @@
+meta {
+  name: Send or resend verification email
+  type: http
+  seq: 10
+}
+
+post {
+  url: {{base_url}}/store/email-verification
+  body: json
+  auth: none
+}
+
+headers {
+  x-publishable-api-key: {{publishable_key}}
+}
+
+body:json {
+  {
+    "locale": "es"
+  }
+}
+
+tests {
+  test("status is 2xx", function () {
+    expect(res.status).to.be.within(200, 299);
+  });
+}

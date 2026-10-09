@@ -297,7 +297,7 @@ export async function POST(
   res: MedusaResponse,
 ) {
   // Any CMS write may change stock, prices or visibility: drop the cached storefront catalogue once it finishes.
-  res.on("finish", invalidateCatalogueCache);
+  res.on("finish", () => { if (res.statusCode >= 400 && res.statusCode < 500) return; if (["set_prices", "stock_import_preview", "sealed_find"].includes(String(req.body?.action))) return; invalidateCatalogueCache(); });
   if(["backup_create","backup_restore","backup_resume"].includes(String(req.body?.action || ""))) return cmsBackups(req,res);
   if(req.body?.action === "pricing_settings") return pricingSettings(req,res);
   if (req.body?.action === "order_payment") return setOrderPayment(req,res);

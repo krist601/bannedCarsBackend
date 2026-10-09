@@ -3,6 +3,7 @@ import { createOrderWorkflow } from "@medusajs/medusa/core-flows"
 import { normalizeSections } from "./storefront-sections"
 import { storeWarehouseIds } from "./store-warehouse-scope"
 import { orderSummaryEmail } from "./order-email"
+import { invalidateCatalogueCache } from "./catalogue-cache"
 
 export type CheckoutLine = {
   line_id: string; variant_id: string; title: string; quantity: number
@@ -137,6 +138,7 @@ export async function placeTestOrder(req: any, customerId: string, body: { cart_
     return full
   })
 
+  invalidateCatalogueCache()
   let emailSent = false
   try {
     const message = orderSummaryEmail(locale, { ...created, payment_status: "not_paid", customer_name: name || customer.first_name || "", notes })

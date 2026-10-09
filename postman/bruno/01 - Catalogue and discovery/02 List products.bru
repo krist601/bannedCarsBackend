@@ -1,0 +1,25 @@
+meta {
+  name: List products
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{base_url}}/store/products?region_id={{region_id}}&limit=100&fields=*variants.calculated_price,+variants.inventory_quantity,+variants.metadata,+metadata
+  body: none
+  auth: none
+}
+
+headers {
+  x-publishable-api-key: {{publishable_key}}
+}
+
+script:post-response {
+  const a=res.body.products||[]; if(a[0]){bru.setEnvVar('product_id',a[0].id); if(a[0].variants&&a[0].variants[0]) bru.setEnvVar('variant_id',a[0].variants[0].id);}
+}
+
+tests {
+  test("status is 2xx", function () {
+    expect(res.status).to.be.within(200, 299);
+  });
+}

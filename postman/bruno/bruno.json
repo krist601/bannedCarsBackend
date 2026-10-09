@@ -1,0 +1,9 @@
+{
+  "version": "1",
+  "name": "Banned Cards",
+  "type": "collection",
+  "ignore": [
+    "node_modules",
+    ".git"
+  ]
+}

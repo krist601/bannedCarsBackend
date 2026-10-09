@@ -1,0 +1,30 @@
+meta {
+  name: set: import cards from Scryfall
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{base_url}}/admin/cms
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{admin_token}}
+}
+
+body:json {
+  {
+    "action": "import",
+    "codes": [
+      "LTR"
+    ]
+  }
+}
+
+tests {
+  test("status is 2xx", function () {
+    expect(res.status).to.be.within(200, 299);
+  });
+}

@@ -1,0 +1,35 @@
+meta {
+  name: Test checkout: place the order from the saved cart
+  type: http
+  seq: 13
+}
+
+post {
+  url: {{base_url}}/store/test-checkout
+  body: json
+  auth: none
+}
+
+headers {
+  x-publishable-api-key: {{publishable_key}}
+}
+
+body:json {
+  {
+    "cart_id": "{{cart_id}}",
+    "contact": {
+      "name": "Postman Tester",
+      "phone": "+56911111111",
+      "address": "Av. Providencia 1234",
+      "city": "Santiago",
+      "notes": ""
+    },
+    "locale": "es"
+  }
+}
+
+tests {
+  test("status is 2xx", function () {
+    expect(res.status).to.be.within(200, 299);
+  });
+}

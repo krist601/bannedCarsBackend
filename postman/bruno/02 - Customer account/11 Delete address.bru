@@ -1,0 +1,21 @@
+meta {
+  name: Delete address
+  type: http
+  seq: 11
+}
+
+delete {
+  url: {{base_url}}/store/customers/me/addresses/{{address_id}}
+  body: none
+  auth: none
+}
+
+headers {
+  x-publishable-api-key: {{publishable_key}}
+}
+
+tests {
+  test("status is 2xx", function () {
+    expect(res.status).to.be.within(200, 299);
+  });
+}

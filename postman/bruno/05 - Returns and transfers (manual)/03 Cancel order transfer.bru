@@ -1,0 +1,21 @@
+meta {
+  name: Cancel order transfer
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{base_url}}/store/orders/{{order_id}}/transfer/cancel
+  body: none
+  auth: none
+}
+
+headers {
+  x-publishable-api-key: {{publishable_key}}
+}
+
+tests {
+  test("status is 2xx", function () {
+    expect(res.status).to.be.within(200, 299);
+  });
+}

@@ -1,0 +1,21 @@
+meta {
+  name: Google sign-in enabled?
+  type: http
+  seq: 6
+}
+
+get {
+  url: {{base_url}}/store/auth/google
+  body: none
+  auth: none
+}
+
+headers {
+  x-publishable-api-key: {{publishable_key}}
+}
+
+tests {
+  test("status is 2xx", function () {
+    expect(res.status).to.be.within(200, 299);
+  });
+}

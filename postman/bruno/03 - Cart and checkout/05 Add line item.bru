@@ -1,0 +1,32 @@
+meta {
+  name: Add line item
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{base_url}}/store/carts/{{cart_id}}/line-items
+  body: json
+  auth: none
+}
+
+headers {
+  x-publishable-api-key: {{publishable_key}}
+}
+
+body:json {
+  {
+    "variant_id": "{{variant_id}}",
+    "quantity": 1
+  }
+}
+
+script:post-response {
+  const a=(res.body.cart||{}).items||[]; const x=a.find(v=>v.variant_id===bru.getEnvVar('variant_id')); if(x) bru.setEnvVar('line_item_id',x.id);
+}
+
+tests {
+  test("status is 2xx", function () {
+    expect(res.status).to.be.within(200, 299);
+  });
+}

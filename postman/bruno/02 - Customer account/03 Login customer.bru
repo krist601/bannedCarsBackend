@@ -1,0 +1,28 @@
+meta {
+  name: Login customer
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{base_url}}/auth/customer/emailpass
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "email": "{{customer_email}}",
+    "password": "{{customer_password}}"
+  }
+}
+
+script:post-response {
+  const d=res.body; if(d.token) bru.setEnvVar('customer_token',d.token);
+}
+
+tests {
+  test("status is 2xx", function () {
+    expect(res.status).to.be.within(200, 299);
+  });
+}

@@ -1,0 +1,21 @@
+meta {
+  name: Get product
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{base_url}}/store/products/{{product_id}}?region_id={{region_id}}&fields=*variants.calculated_price,+variants.inventory_quantity,+variants.metadata,+metadata
+  body: none
+  auth: none
+}
+
+headers {
+  x-publishable-api-key: {{publishable_key}}
+}
+
+tests {
+  test("status is 2xx", function () {
+    expect(res.status).to.be.within(200, 299);
+  });
+}

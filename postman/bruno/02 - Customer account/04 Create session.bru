@@ -1,0 +1,21 @@
+meta {
+  name: Create session
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{base_url}}/auth/session
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{customer_token}}
+}
+
+tests {
+  test("status is 2xx", function () {
+    expect(res.status).to.be.within(200, 299);
+  });
+}

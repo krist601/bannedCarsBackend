@@ -1,0 +1,25 @@
+meta {
+  name: orders (open)
+  type: http
+  seq: 6
+}
+
+get {
+  url: {{base_url}}/admin/cms?resource=orders&status=open&offset=0
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{admin_token}}
+}
+
+script:post-response {
+  const a=res.body.rows||[]; if(a[0]) bru.setEnvVar('order_id',a[0].id);
+}
+
+tests {
+  test("status is 2xx", function () {
+    expect(res.status).to.be.within(200, 299);
+  });
+}

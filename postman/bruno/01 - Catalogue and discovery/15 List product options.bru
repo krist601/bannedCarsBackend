@@ -1,0 +1,25 @@
+meta {
+  name: List product options
+  type: http
+  seq: 15
+}
+
+get {
+  url: {{base_url}}/store/product-options?limit=100
+  body: none
+  auth: none
+}
+
+headers {
+  x-publishable-api-key: {{publishable_key}}
+}
+
+script:post-response {
+  const a=res.body.product_options||[]; if(a[0]) bru.setEnvVar('product_option_id',a[0].id);
+}
+
+tests {
+  test("status is 2xx", function () {
+    expect(res.status).to.be.within(200, 299);
+  });
+}

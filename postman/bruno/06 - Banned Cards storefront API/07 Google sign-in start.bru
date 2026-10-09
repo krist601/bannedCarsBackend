@@ -1,0 +1,21 @@
+meta {
+  name: Google sign-in start
+  type: http
+  seq: 7
+}
+
+post {
+  url: {{base_url}}/auth/customer/google
+  body: json
+  auth: none
+}
+
+body:json {
+  {}
+}
+
+tests {
+  test("status is 2xx", function () {
+    expect(res.status).to.be.within(200, 299);
+  });
+}

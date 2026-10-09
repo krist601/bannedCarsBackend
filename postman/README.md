@@ -27,3 +27,11 @@ Regenerate the JSON files after editing [the generator](../scripts/generate-post
 ```sh
 pnpm postman:generate
 ```
+
+## Files
+
+- `Banned Cards - Medusa Store API.postman_collection.json`: import in Postman (Import > file).
+- `Banned Cards Local.postman_environment.json` / `Banned Cards Production.postman_environment.json`: pick one as the active environment (production uses https://api.bannedcards.cl; fill `admin_email`/`admin_password` yourself).
+- `bruno/`: same requests as a Bruno collection (Bruno > Open Collection > choose this folder; environments Local and Production included).
+- Regenerate everything with `node scripts/generate-postman.mjs`.
+- Groups 07 and 08 (CMS) need an admin or staff token; group 08 changes data, so use Local unless you mean it.

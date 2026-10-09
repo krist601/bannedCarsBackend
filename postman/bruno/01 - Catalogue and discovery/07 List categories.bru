@@ -1,0 +1,25 @@
+meta {
+  name: List categories
+  type: http
+  seq: 7
+}
+
+get {
+  url: {{base_url}}/store/product-categories?limit=100
+  body: none
+  auth: none
+}
+
+headers {
+  x-publishable-api-key: {{publishable_key}}
+}
+
+script:post-response {
+  const a=res.body.product_categories||[]; if(a[0]) bru.setEnvVar('category_id',a[0].id);
+}
+
+tests {
+  test("status is 2xx", function () {
+    expect(res.status).to.be.within(200, 299);
+  });
+}

@@ -1,0 +1,21 @@
+meta {
+  name: Search products
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{base_url}}/store/products/search?q={{search_query}}&limit=20
+  body: none
+  auth: none
+}
+
+headers {
+  x-publishable-api-key: {{publishable_key}}
+}
+
+tests {
+  test("status is 2xx", function () {
+    expect(res.status).to.be.within(200, 299);
+  });
+}

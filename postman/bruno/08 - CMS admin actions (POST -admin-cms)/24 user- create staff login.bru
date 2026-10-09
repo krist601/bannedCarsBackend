@@ -1,0 +1,34 @@
+meta {
+  name: user: create staff login
+  type: http
+  seq: 24
+}
+
+post {
+  url: {{base_url}}/admin/cms
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{admin_token}}
+}
+
+body:json {
+  {
+    "action": "user_create",
+    "email": "staff@example.cl",
+    "password": "ChangeMe-12345",
+    "sections": [
+      "cards",
+      "stock"
+    ],
+    "warehouseIds": []
+  }
+}
+
+tests {
+  test("status is 2xx", function () {
+    expect(res.status).to.be.within(200, 299);
+  });
+}

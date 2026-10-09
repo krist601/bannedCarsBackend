@@ -1,0 +1,28 @@
+meta {
+  name: Create payment session
+  type: http
+  seq: 14
+}
+
+post {
+  url: {{base_url}}/store/payment-collections/{{payment_collection_id}}/payment-sessions
+  body: json
+  auth: none
+}
+
+headers {
+  x-publishable-api-key: {{publishable_key}}
+}
+
+body:json {
+  {
+    "provider_id": "{{payment_provider_id}}",
+    "data": {}
+  }
+}
+
+tests {
+  test("status is 2xx", function () {
+    expect(res.status).to.be.within(200, 299);
+  });
+}

@@ -1,0 +1,21 @@
+meta {
+  name: TCG cards, grouped and paged
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{base_url}}/store/tcg/cards?grouped=true&limit=40&offset=0&showOutOfStock=false&sort=release&q=&sets=
+  body: none
+  auth: none
+}
+
+headers {
+  x-publishable-api-key: {{publishable_key}}
+}
+
+tests {
+  test("status is 2xx", function () {
+    expect(res.status).to.be.within(200, 299);
+  });
+}

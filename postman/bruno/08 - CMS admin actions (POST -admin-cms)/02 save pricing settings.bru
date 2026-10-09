@@ -1,0 +1,30 @@
+meta {
+  name: save pricing settings
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{base_url}}/admin/cms
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{admin_token}}
+}
+
+body:json {
+  {
+    "action": "pricing_settings",
+    "rate": 750,
+    "minimum": 300,
+    "rounding": 50
+  }
+}
+
+tests {
+  test("status is 2xx", function () {
+    expect(res.status).to.be.within(200, 299);
+  });
+}

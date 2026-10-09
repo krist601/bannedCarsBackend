@@ -160,6 +160,41 @@
       "key": "order_transfer_token",
       "value": "",
       "type": "string"
+    },
+    {
+      "key": "verification_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "printing_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "listing_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "location_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "set_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "section",
+      "value": "custom",
+      "type": "string"
+    },
+    {
+      "key": "backup_id",
+      "value": "",
+      "type": "string"
     }
   ],
   "item": [
@@ -2117,6 +2152,2137 @@
                   "language": "json"
                 }
               }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx',()=>pm.expect(pm.response.code).to.be.within(200,299));",
+                  "pm.test('Response is JSON',()=>pm.response.to.be.json);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "06 - Banned Cards storefront API",
+      "description": "Our own endpoints: settings, card catalogue, sets, availability, email verification, Google sign-in, test checkout.",
+      "item": [
+        {
+          "name": "Storefront settings (section switches, test checkout)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-publishable-api-key",
+                "value": "{{publishable_key}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/store/storefront-settings"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx',()=>pm.expect(pm.response.code).to.be.within(200,299));",
+                  "pm.test('Response is JSON',()=>pm.response.to.be.json);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "TCG cards, grouped and paged",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-publishable-api-key",
+                "value": "{{publishable_key}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/store/tcg/cards?grouped=true&limit=40&offset=0&showOutOfStock=false&sort=release&q=&sets="
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx',()=>pm.expect(pm.response.code).to.be.within(200,299));",
+                  "pm.test('Response is JSON',()=>pm.response.to.be.json);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "TCG sets directory",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-publishable-api-key",
+                "value": "{{publishable_key}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/store/tcg/sets?limit=10&offset=0&q={{search_query}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx',()=>pm.expect(pm.response.code).to.be.within(200,299));",
+                  "pm.test('Response is JSON',()=>pm.response.to.be.json);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Hottest singles (last 30 days)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-publishable-api-key",
+                "value": "{{publishable_key}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/store/tcg/hottest"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx',()=>pm.expect(pm.response.code).to.be.within(200,299));",
+                  "pm.test('Response is JSON',()=>pm.response.to.be.json);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cart availability per variant",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-publishable-api-key",
+                "value": "{{publishable_key}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/store/cart-availability?variant_ids={{variant_id}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx',()=>pm.expect(pm.response.code).to.be.within(200,299));",
+                  "pm.test('Response is JSON',()=>pm.response.to.be.json);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Google sign-in enabled?",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-publishable-api-key",
+                "value": "{{publishable_key}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/store/auth/google"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx',()=>pm.expect(pm.response.code).to.be.within(200,299));",
+                  "pm.test('Response is JSON',()=>pm.response.to.be.json);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Google sign-in start",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/auth/customer/google",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx',()=>pm.expect(pm.response.code).to.be.within(200,299));",
+                  "pm.test('Response is JSON',()=>pm.response.to.be.json);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Google sign-in complete (needs the Google bearer token)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-publishable-api-key",
+                "value": "{{publishable_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/store/auth/google/complete",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"link\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{customer_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx',()=>pm.expect(pm.response.code).to.be.within(200,299));",
+                  "pm.test('Response is JSON',()=>pm.response.to.be.json);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Email verification status",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-publishable-api-key",
+                "value": "{{publishable_key}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/store/email-verification"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx',()=>pm.expect(pm.response.code).to.be.within(200,299));",
+                  "pm.test('Response is JSON',()=>pm.response.to.be.json);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Send or resend verification email",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-publishable-api-key",
+                "value": "{{publishable_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/store/email-verification",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"locale\": \"es\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx',()=>pm.expect(pm.response.code).to.be.within(200,299));",
+                  "pm.test('Response is JSON',()=>pm.response.to.be.json);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Confirm email (token from the email link)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-publishable-api-key",
+                "value": "{{publishable_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/store/email-verification/confirm",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"{{verification_token}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx',()=>pm.expect(pm.response.code).to.be.within(200,299));",
+                  "pm.test('Response is JSON',()=>pm.response.to.be.json);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Test checkout: is it on?",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-publishable-api-key",
+                "value": "{{publishable_key}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/store/test-checkout"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx',()=>pm.expect(pm.response.code).to.be.within(200,299));",
+                  "pm.test('Response is JSON',()=>pm.response.to.be.json);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Test checkout: place the order from the saved cart",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-publishable-api-key",
+                "value": "{{publishable_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/store/test-checkout",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cart_id\": \"{{cart_id}}\",\n  \"contact\": {\n    \"name\": \"Postman Tester\",\n    \"phone\": \"+56911111111\",\n    \"address\": \"Av. Providencia 1234\",\n    \"city\": \"Santiago\",\n    \"notes\": \"\"\n  },\n  \"locale\": \"es\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx',()=>pm.expect(pm.response.code).to.be.within(200,299));",
+                  "pm.test('Response is JSON',()=>pm.response.to.be.json);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "07 - CMS admin API (/admin/cms)",
+      "description": "Read resources (GET ?resource=...). Needs an admin or staff token in admin_token.",
+      "item": [
+        {
+          "name": "me (permissions)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/admin/cms?resource=me",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx',()=>pm.expect(pm.response.code).to.be.within(200,299));",
+                  "pm.test('Response is JSON',()=>pm.response.to.be.json);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "overview",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/admin/cms?resource=overview",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx',()=>pm.expect(pm.response.code).to.be.within(200,299));",
+                  "pm.test('Response is JSON',()=>pm.response.to.be.json);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "locations (warehouses)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/admin/cms?resource=locations",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx',()=>pm.expect(pm.response.code).to.be.within(200,299));",
+                  "pm.test('Response is JSON',()=>pm.response.to.be.json);",
+                  "const a=pm.response.json().rows||[]; if(a[0]) pm.environment.set('location_id',a[0].id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "cards",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/admin/cms?resource=cards&offset=0&q={{search_query}}&set_id=",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx',()=>pm.expect(pm.response.code).to.be.within(200,299));",
+                  "pm.test('Response is JSON',()=>pm.response.to.be.json);",
+                  "const a=pm.response.json().rows||[]; if(a[0]) pm.environment.set('printing_id',a[0].id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "stock listings",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/admin/cms?resource=stock&offset=0&location_id={{location_id}}&q=",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx',()=>pm.expect(pm.response.code).to.be.within(200,299));",
+                  "pm.test('Response is JSON',()=>pm.response.to.be.json);",
+                  "const a=pm.response.json().rows||[]; if(a[0]) pm.environment.set('listing_id',a[0].id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "orders (open)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/admin/cms?resource=orders&status=open&offset=0",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx',()=>pm.expect(pm.response.code).to.be.within(200,299));",
+                  "pm.test('Response is JSON',()=>pm.response.to.be.json);",
+                  "const a=pm.response.json().rows||[]; if(a[0]) pm.environment.set('order_id',a[0].id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "orders (closed)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/admin/cms?resource=orders&status=closed&offset=0",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx',()=>pm.expect(pm.response.code).to.be.within(200,299));",
+                  "pm.test('Response is JSON',()=>pm.response.to.be.json);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "sets (grouped, searchable)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/admin/cms?resource=sets&offset=0&q=",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx',()=>pm.expect(pm.response.code).to.be.within(200,299));",
+                  "pm.test('Response is JSON',()=>pm.response.to.be.json);",
+                  "const a=pm.response.json().rows||[]; if(a[0]) pm.environment.set('set_id',a[0].id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "set options (filter list)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/admin/cms?resource=set_options",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx',()=>pm.expect(pm.response.code).to.be.within(200,299));",
+                  "pm.test('Response is JSON',()=>pm.response.to.be.json);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "set list update: status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/admin/cms?resource=set_sync_status",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx',()=>pm.expect(pm.response.code).to.be.within(200,299));",
+                  "pm.test('Response is JSON',()=>pm.response.to.be.json);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "sealed / custom / accessories products",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/admin/cms?resource=sealed&section={{section}}&offset=0&q=&category_id=",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx',()=>pm.expect(pm.response.code).to.be.within(200,299));",
+                  "pm.test('Response is JSON',()=>pm.response.to.be.json);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "storefront settings",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/admin/cms?resource=storefront_settings",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx',()=>pm.expect(pm.response.code).to.be.within(200,299));",
+                  "pm.test('Response is JSON',()=>pm.response.to.be.json);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "pricing settings",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/admin/cms?resource=pricing",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx',()=>pm.expect(pm.response.code).to.be.within(200,299));",
+                  "pm.test('Response is JSON',()=>pm.response.to.be.json);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "stores and warehouses",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/admin/cms?resource=stores",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx',()=>pm.expect(pm.response.code).to.be.within(200,299));",
+                  "pm.test('Response is JSON',()=>pm.response.to.be.json);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "users and access",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/admin/cms?resource=users",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx',()=>pm.expect(pm.response.code).to.be.within(200,299));",
+                  "pm.test('Response is JSON',()=>pm.response.to.be.json);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "database backups",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/admin/cms?resource=backups",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx',()=>pm.expect(pm.response.code).to.be.within(200,299));",
+                  "pm.test('Response is JSON',()=>pm.response.to.be.json);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "08 - CMS admin actions (POST /admin/cms)",
+      "description": "Every CMS action. Several change data: use a local copy or be careful in production.",
+      "item": [
+        {
+          "name": "save storefront settings",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/admin/cms",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"storefront_settings\",\n  \"settings\": {\n    \"testCheckout\": false\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx',()=>pm.expect(pm.response.code).to.be.within(200,299));",
+                  "pm.test('Response is JSON',()=>pm.response.to.be.json);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "save pricing settings",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/admin/cms",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"pricing_settings\",\n  \"rate\": 750,\n  \"minimum\": 300,\n  \"rounding\": 50\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx',()=>pm.expect(pm.response.code).to.be.within(200,299));",
+                  "pm.test('Response is JSON',()=>pm.response.to.be.json);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "set: show or hide",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/admin/cms",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"set_visibility\",\n  \"set_id\": \"{{set_id}}\",\n  \"isVisible\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx',()=>pm.expect(pm.response.code).to.be.within(200,299));",
+                  "pm.test('Response is JSON',()=>pm.response.to.be.json);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "set: import cards from Scryfall",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/admin/cms",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"import\",\n  \"codes\": [\n    \"LTR\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx',()=>pm.expect(pm.response.code).to.be.within(200,299));",
+                  "pm.test('Response is JSON',()=>pm.response.to.be.json);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "set list: get new sets from Scryfall",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/admin/cms",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"set_sync\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx',()=>pm.expect(pm.response.code).to.be.within(200,299));",
+                  "pm.test('Response is JSON',()=>pm.response.to.be.json);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "set prices: preview",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/admin/cms",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"set_prices\",\n  \"set_id\": \"{{set_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx',()=>pm.expect(pm.response.code).to.be.within(200,299));",
+                  "pm.test('Response is JSON',()=>pm.response.to.be.json);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "set prices: update from Scryfall",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/admin/cms",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"set_prices_update\",\n  \"set_id\": \"{{set_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx',()=>pm.expect(pm.response.code).to.be.within(200,299));",
+                  "pm.test('Response is JSON',()=>pm.response.to.be.json);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "set prices: reset to Scryfall (overwrites hand-set prices)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/admin/cms",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"set_prices_reset\",\n  \"set_id\": \"{{set_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx',()=>pm.expect(pm.response.code).to.be.within(200,299));",
+                  "pm.test('Response is JSON',()=>pm.response.to.be.json);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "card: set SKU",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/admin/cms",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"card_sku\",\n  \"printing_id\": \"{{printing_id}}\",\n  \"sku\": \"\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx',()=>pm.expect(pm.response.code).to.be.within(200,299));",
+                  "pm.test('Response is JSON',()=>pm.response.to.be.json);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "stock: quick add one card",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/admin/cms",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"quick_add\",\n  \"printing_id\": \"{{printing_id}}\",\n  \"quantity\": 1,\n  \"condition\": \"near_mint\",\n  \"finish\": \"non_foil\",\n  \"language\": \"English\",\n  \"location_id\": \"{{location_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx',()=>pm.expect(pm.response.code).to.be.within(200,299));",
+                  "pm.test('Response is JSON',()=>pm.response.to.be.json);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "stock: import preview (text list)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/admin/cms",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"stock_import_preview\",\n  \"text\": \"2x The One Ring (LTR) 246 *F* S\",\n  \"condition\": \"near_mint\",\n  \"location_id\": \"{{location_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx',()=>pm.expect(pm.response.code).to.be.within(200,299));",
+                  "pm.test('Response is JSON',()=>pm.response.to.be.json);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "stock: import (text list)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/admin/cms",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"stock_import\",\n  \"text\": \"2x The One Ring (LTR) 246 *F* S\",\n  \"condition\": \"near_mint\",\n  \"location_id\": \"{{location_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx',()=>pm.expect(pm.response.code).to.be.within(200,299));",
+                  "pm.test('Response is JSON',()=>pm.response.to.be.json);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "stock: receive",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/admin/cms",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"receive\",\n  \"listing_id\": \"{{listing_id}}\",\n  \"location_id\": \"{{location_id}}\",\n  \"quantity\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx',()=>pm.expect(pm.response.code).to.be.within(200,299));",
+                  "pm.test('Response is JSON',()=>pm.response.to.be.json);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "stock: subtract",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/admin/cms",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"subtract\",\n  \"listing_id\": \"{{listing_id}}\",\n  \"location_id\": \"{{location_id}}\",\n  \"quantity\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx',()=>pm.expect(pm.response.code).to.be.within(200,299));",
+                  "pm.test('Response is JSON',()=>pm.response.to.be.json);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "stock: change price",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/admin/cms",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"price\",\n  \"listing_id\": \"{{listing_id}}\",\n  \"price_clp\": 1000\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx',()=>pm.expect(pm.response.code).to.be.within(200,299));",
+                  "pm.test('Response is JSON',()=>pm.response.to.be.json);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "stock: create listing",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/admin/cms",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"listing\",\n  \"printing_id\": \"{{printing_id}}\",\n  \"condition\": \"near_mint\",\n  \"finish\": \"non_foil\",\n  \"language\": \"English\",\n  \"sku\": \"EXAMPLE-SKU\",\n  \"quantity\": 1,\n  \"price_clp\": 1000,\n  \"location_id\": \"{{location_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx',()=>pm.expect(pm.response.code).to.be.within(200,299));",
+                  "pm.test('Response is JSON',()=>pm.response.to.be.json);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "order: mark paid / not paid",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/admin/cms",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"order_payment\",\n  \"order_id\": \"{{order_id}}\",\n  \"paid\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx',()=>pm.expect(pm.response.code).to.be.within(200,299));",
+                  "pm.test('Response is JSON',()=>pm.response.to.be.json);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "product: create (section = sealed | custom | accessories)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/admin/cms",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"sealed_create\",\n  \"section\": \"{{section}}\",\n  \"title\": \"Example product\",\n  \"status\": \"draft\",\n  \"description\": \"\",\n  \"thumbnail\": \"\",\n  \"category_id\": \"\",\n  \"price_clp\": 1000,\n  \"sku\": \"\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx',()=>pm.expect(pm.response.code).to.be.within(200,299));",
+                  "pm.test('Response is JSON',()=>pm.response.to.be.json);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "product: save",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/admin/cms",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"sealed_save\",\n  \"section\": \"{{section}}\",\n  \"product_id\": \"{{product_id}}\",\n  \"title\": \"Example product\",\n  \"status\": \"draft\",\n  \"description\": \"\",\n  \"thumbnail\": \"\",\n  \"category_id\": \"\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx',()=>pm.expect(pm.response.code).to.be.within(200,299));",
+                  "pm.test('Response is JSON',()=>pm.response.to.be.json);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "product: change price",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/admin/cms",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"sealed_price\",\n  \"section\": \"{{section}}\",\n  \"product_id\": \"{{product_id}}\",\n  \"variant_id\": \"{{variant_id}}\",\n  \"price_clp\": 1000\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx',()=>pm.expect(pm.response.code).to.be.within(200,299));",
+                  "pm.test('Response is JSON',()=>pm.response.to.be.json);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "product: receive or subtract stock",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/admin/cms",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"sealed_stock\",\n  \"section\": \"{{section}}\",\n  \"product_id\": \"{{product_id}}\",\n  \"variant_id\": \"{{variant_id}}\",\n  \"location_id\": \"{{location_id}}\",\n  \"quantity\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx',()=>pm.expect(pm.response.code).to.be.within(200,299));",
+                  "pm.test('Response is JSON',()=>pm.response.to.be.json);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "product: draft / published",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/admin/cms",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"sealed_status\",\n  \"section\": \"{{section}}\",\n  \"product_id\": \"{{product_id}}\",\n  \"status\": \"published\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx',()=>pm.expect(pm.response.code).to.be.within(200,299));",
+                  "pm.test('Response is JSON',()=>pm.response.to.be.json);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "product: upload image (base64, 5 MB max)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/admin/cms",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"sealed_image\",\n  \"section\": \"{{section}}\",\n  \"mime_type\": \"image/png\",\n  \"content\": \"<base64 of the image>\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx',()=>pm.expect(pm.response.code).to.be.within(200,299));",
+                  "pm.test('Response is JSON',()=>pm.response.to.be.json);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "user: create staff login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/admin/cms",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"user_create\",\n  \"email\": \"staff@example.cl\",\n  \"password\": \"ChangeMe-12345\",\n  \"sections\": [\n    \"cards\",\n    \"stock\"\n  ],\n  \"warehouseIds\": []\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx',()=>pm.expect(pm.response.code).to.be.within(200,299));",
+                  "pm.test('Response is JSON',()=>pm.response.to.be.json);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "store: save domain and warehouses",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/admin/cms",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"store_save\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx',()=>pm.expect(pm.response.code).to.be.within(200,299));",
+                  "pm.test('Response is JSON',()=>pm.response.to.be.json);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "warehouse: create",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/admin/cms",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"warehouse_create\",\n  \"name\": \"New warehouse\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx',()=>pm.expect(pm.response.code).to.be.within(200,299));",
+                  "pm.test('Response is JSON',()=>pm.response.to.be.json);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "backup: create now",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/admin/cms",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"backup_create\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
             }
           },
           "event": [

@@ -1,0 +1,29 @@
+meta {
+  name: Remove promotion
+  type: http
+  seq: 9
+}
+
+delete {
+  url: {{base_url}}/store/carts/{{cart_id}}/promotions
+  body: json
+  auth: none
+}
+
+headers {
+  x-publishable-api-key: {{publishable_key}}
+}
+
+body:json {
+  {
+    "promo_codes": [
+      "{{promotion_code}}"
+    ]
+  }
+}
+
+tests {
+  test("status is 2xx", function () {
+    expect(res.status).to.be.within(200, 299);
+  });
+}

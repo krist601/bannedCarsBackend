@@ -1,0 +1,28 @@
+meta {
+  name: Add shipping method
+  type: http
+  seq: 12
+}
+
+post {
+  url: {{base_url}}/store/carts/{{cart_id}}/shipping-methods
+  body: json
+  auth: none
+}
+
+headers {
+  x-publishable-api-key: {{publishable_key}}
+}
+
+body:json {
+  {
+    "option_id": "{{shipping_option_id}}",
+    "data": {}
+  }
+}
+
+tests {
+  test("status is 2xx", function () {
+    expect(res.status).to.be.within(200, 299);
+  });
+}

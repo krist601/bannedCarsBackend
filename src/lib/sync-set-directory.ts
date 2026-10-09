@@ -2,6 +2,8 @@ import type { MedusaContainer, IFileModuleService } from "@medusajs/framework/ty
 import { Modules } from "@medusajs/framework/utils"
 import { readMagicSets, type SetCatalog } from "./set-directory-store"
 
+/** Icons saved by the local file provider (http://localhost:9000/static/...) cannot be loaded by shoppers; re-upload them to the configured storage. */
+const isLocalFileUrl = (value: unknown) => typeof value === "string" && /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(:\d+)?\//.test(value) && process.env.FILE_STORAGE_DRIVER === "s3"
 type ScryfallSet = { id: string; code: string; name: string; released_at?: string; icon_svg_uri?: string; block_code?: string; block?: string; parent_set_code?: string; set_type: string; digital: boolean }
 const headers = { "User-Agent": "BannedCards/0.1 (set-directory-sync)", Accept: "application/json" }
 
@@ -22,7 +24,7 @@ export async function syncSetDirectory(container: MedusaContainer) {
     const prior = existing.get(set.code)
     const metadata: Record<string, unknown> = { isVisible: true, ...prior?.metadata, scryfall_id: set.id, block_code: set.block_code ?? null, block: set.block ?? null, parent_set_code: set.parent_set_code ?? null, set_type: set.set_type, digital: set.digital, scryfall_icon_url: set.icon_svg_uri ?? null, sets_synced_at: new Date().toISOString() }
     let uploadedId: string | undefined
-    if (process.env.SYNC_SET_ICONS !== "false" && set.icon_svg_uri && (!metadata.icon_storage_url || metadata.icon_source_url !== set.icon_svg_uri)) {
+    if (process.env.SYNC_SET_ICONS !== "false" && set.icon_svg_uri && (!metadata.icon_storage_url || metadata.icon_source_url !== set.icon_svg_uri || isLocalFileUrl(metadata.icon_storage_url))) {
       try {
         const url = new URL(set.icon_svg_uri)
         if (url.protocol !== "https:" || url.hostname !== "svgs.scryfall.io") throw new Error("Unexpected icon source")

@@ -1,0 +1,25 @@
+meta {
+  name: List shipping options
+  type: http
+  seq: 10
+}
+
+get {
+  url: {{base_url}}/store/shipping-options?cart_id={{cart_id}}
+  body: none
+  auth: none
+}
+
+headers {
+  x-publishable-api-key: {{publishable_key}}
+}
+
+script:post-response {
+  const a=res.body.shipping_options||[]; if(a[0]) bru.setEnvVar('shipping_option_id',a[0].id);
+}
+
+tests {
+  test("status is 2xx", function () {
+    expect(res.status).to.be.within(200, 299);
+  });
+}

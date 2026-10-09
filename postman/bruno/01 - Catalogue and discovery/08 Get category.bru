@@ -1,0 +1,21 @@
+meta {
+  name: Get category
+  type: http
+  seq: 8
+}
+
+get {
+  url: {{base_url}}/store/product-categories/{{category_id}}
+  body: none
+  auth: none
+}
+
+headers {
+  x-publishable-api-key: {{publishable_key}}
+}
+
+tests {
+  test("status is 2xx", function () {
+    expect(res.status).to.be.within(200, 299);
+  });
+}

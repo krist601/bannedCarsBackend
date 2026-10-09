@@ -1,0 +1,25 @@
+meta {
+  name: Find CLP region
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{base_url}}/store/regions?limit=100
+  body: none
+  auth: none
+}
+
+headers {
+  x-publishable-api-key: {{publishable_key}}
+}
+
+script:post-response {
+  const a=res.body.regions||[]; const x=a.find(v=>String(v.currency_code).toLowerCase()==='clp'); if(x) bru.setEnvVar('region_id',x.id);
+}
+
+tests {
+  test("status is 2xx", function () {
+    expect(res.status).to.be.within(200, 299);
+  });
+}

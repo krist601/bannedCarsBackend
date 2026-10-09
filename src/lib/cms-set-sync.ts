@@ -1,5 +1,6 @@
 import { withBackupActivity } from "./database-backups";
 import { syncSetDirectory } from "./sync-set-directory";
+import { invalidateCatalogueCache } from "./catalogue-cache";
 
 type SyncState = { running: boolean; started_at: string | null; finished_at: string | null; sets: number | null; icon_failures: number | null; error: string | null };
 const state: SyncState = { running: false, started_at: null, finished_at: null, sets: null, icon_failures: null, error: null };
@@ -14,7 +15,7 @@ export function startSetSync(container: any): SyncState {
     state.icon_failures = result.iconFailures;
   })
     .catch((error) => { state.error = (error as Error).message; })
-    .finally(() => { state.running = false; state.finished_at = new Date().toISOString(); });
+    .finally(() => { state.running = false; state.finished_at = new Date().toISOString(); invalidateCatalogueCache(); });
   return { ...state };
 }
 export const setSyncStatus = (): SyncState => ({ ...state });

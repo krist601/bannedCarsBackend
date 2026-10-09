@@ -1,0 +1,25 @@
+meta {
+  name: Attach customer
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{base_url}}/store/carts/{{cart_id}}/customer
+  body: json
+  auth: none
+}
+
+headers {
+  x-publishable-api-key: {{publishable_key}}
+}
+
+body:json {
+  {}
+}
+
+tests {
+  test("status is 2xx", function () {
+    expect(res.status).to.be.within(200, 299);
+  });
+}

@@ -1,0 +1,31 @@
+meta {
+  name: Google sign-in complete (needs the Google bearer token)
+  type: http
+  seq: 8
+}
+
+post {
+  url: {{base_url}}/store/auth/google/complete
+  body: json
+  auth: bearer
+}
+
+headers {
+  x-publishable-api-key: {{publishable_key}}
+}
+
+auth:bearer {
+  token: {{customer_token}}
+}
+
+body:json {
+  {
+    "link": false
+  }
+}
+
+tests {
+  test("status is 2xx", function () {
+    expect(res.status).to.be.within(200, 299);
+  });
+}

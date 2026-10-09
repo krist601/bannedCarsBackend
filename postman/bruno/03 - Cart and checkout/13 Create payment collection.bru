@@ -1,0 +1,31 @@
+meta {
+  name: Create payment collection
+  type: http
+  seq: 13
+}
+
+post {
+  url: {{base_url}}/store/payment-collections
+  body: json
+  auth: none
+}
+
+headers {
+  x-publishable-api-key: {{publishable_key}}
+}
+
+body:json {
+  {
+    "cart_id": "{{cart_id}}"
+  }
+}
+
+script:post-response {
+  const d=res.body.payment_collection; if(d) bru.setEnvVar('payment_collection_id',d.id);
+}
+
+tests {
+  test("status is 2xx", function () {
+    expect(res.status).to.be.within(200, 299);
+  });
+}

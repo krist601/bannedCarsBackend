@@ -1,0 +1,21 @@
+meta {
+  name: Get CLP currency
+  type: http
+  seq: 18
+}
+
+get {
+  url: {{base_url}}/store/currencies/clp
+  body: none
+  auth: none
+}
+
+headers {
+  x-publishable-api-key: {{publishable_key}}
+}
+
+tests {
+  test("status is 2xx", function () {
+    expect(res.status).to.be.within(200, 299);
+  });
+}

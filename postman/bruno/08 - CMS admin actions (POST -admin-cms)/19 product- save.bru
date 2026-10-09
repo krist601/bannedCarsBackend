@@ -1,0 +1,34 @@
+meta {
+  name: product: save
+  type: http
+  seq: 19
+}
+
+post {
+  url: {{base_url}}/admin/cms
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{admin_token}}
+}
+
+body:json {
+  {
+    "action": "sealed_save",
+    "section": "{{section}}",
+    "product_id": "{{product_id}}",
+    "title": "Example product",
+    "status": "draft",
+    "description": "",
+    "thumbnail": "",
+    "category_id": ""
+  }
+}
+
+tests {
+  test("status is 2xx", function () {
+    expect(res.status).to.be.within(200, 299);
+  });
+}

@@ -1,0 +1,25 @@
+meta {
+  name: sets (grouped, searchable)
+  type: http
+  seq: 8
+}
+
+get {
+  url: {{base_url}}/admin/cms?resource=sets&offset=0&q=
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{admin_token}}
+}
+
+script:post-response {
+  const a=res.body.rows||[]; if(a[0]) bru.setEnvVar('set_id',a[0].id);
+}
+
+tests {
+  test("status is 2xx", function () {
+    expect(res.status).to.be.within(200, 299);
+  });
+}

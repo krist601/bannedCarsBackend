@@ -1,0 +1,21 @@
+meta {
+  name: Get return reason
+  type: http
+  seq: 23
+}
+
+get {
+  url: {{base_url}}/store/return-reasons/{{return_reason_id}}
+  body: none
+  auth: none
+}
+
+headers {
+  x-publishable-api-key: {{publishable_key}}
+}
+
+tests {
+  test("status is 2xx", function () {
+    expect(res.status).to.be.within(200, 299);
+  });
+}

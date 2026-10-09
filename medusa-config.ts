@@ -56,6 +56,13 @@ export default defineConfig({
     // Google is for customers only; staff authentication remains email/password.
     ...(localSession ? { cookieOptions: { secure: false, sameSite: "lax" as const, httpOnly: true } } : {}),
     databaseUrl: process.env.DATABASE_URL,
+    databaseDriverOptions: {
+      connection: {
+        ssl: process.env.DATABASE_SSL === "true"
+          ? { rejectUnauthorized: false }
+          : false
+      }
+    },
     redisUrl: process.env.REDIS_URL,
     http: {
       authMethodsPerActor: { user: ["emailpass"], customer: googleEnabled ? ["emailpass", "google"] : ["emailpass"] },

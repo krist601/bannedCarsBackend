@@ -1,0 +1,30 @@
+meta {
+  name: product: upload image (base64, 5 MB max)
+  type: http
+  seq: 23
+}
+
+post {
+  url: {{base_url}}/admin/cms
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{admin_token}}
+}
+
+body:json {
+  {
+    "action": "sealed_image",
+    "section": "{{section}}",
+    "mime_type": "image/png",
+    "content": "<base64 of the image>"
+  }
+}
+
+tests {
+  test("status is 2xx", function () {
+    expect(res.status).to.be.within(200, 299);
+  });
+}

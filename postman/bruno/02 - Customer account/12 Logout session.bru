@@ -1,0 +1,17 @@
+meta {
+  name: Logout session
+  type: http
+  seq: 12
+}
+
+delete {
+  url: {{base_url}}/auth/session
+  body: none
+  auth: none
+}
+
+tests {
+  test("status is 2xx", function () {
+    expect(res.status).to.be.within(200, 299);
+  });
+}

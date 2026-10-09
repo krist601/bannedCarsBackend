@@ -1,0 +1,38 @@
+meta {
+  name: Create return
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{base_url}}/store/returns
+  body: json
+  auth: none
+}
+
+headers {
+  x-publishable-api-key: {{publishable_key}}
+}
+
+body:json {
+  {
+    "order_id": "{{order_id}}",
+    "items": [
+      {
+        "id": "{{order_line_item_id}}",
+        "quantity": 1,
+        "reason_id": "{{return_reason_id}}"
+      }
+    ],
+    "return_shipping": {
+      "option_id": "{{return_shipping_option_id}}"
+    },
+    "note": "Postman return test"
+  }
+}
+
+tests {
+  test("status is 2xx", function () {
+    expect(res.status).to.be.within(200, 299);
+  });
+}

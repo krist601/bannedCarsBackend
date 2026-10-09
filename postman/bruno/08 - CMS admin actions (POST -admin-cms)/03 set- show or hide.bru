@@ -1,0 +1,29 @@
+meta {
+  name: set: show or hide
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{base_url}}/admin/cms
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{admin_token}}
+}
+
+body:json {
+  {
+    "action": "set_visibility",
+    "set_id": "{{set_id}}",
+    "isVisible": true
+  }
+}
+
+tests {
+  test("status is 2xx", function () {
+    expect(res.status).to.be.within(200, 299);
+  });
+}

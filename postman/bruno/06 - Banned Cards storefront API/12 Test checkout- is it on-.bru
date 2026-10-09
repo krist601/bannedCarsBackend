@@ -1,0 +1,21 @@
+meta {
+  name: Test checkout: is it on?
+  type: http
+  seq: 12
+}
+
+get {
+  url: {{base_url}}/store/test-checkout
+  body: none
+  auth: none
+}
+
+headers {
+  x-publishable-api-key: {{publishable_key}}
+}
+
+tests {
+  test("status is 2xx", function () {
+    expect(res.status).to.be.within(200, 299);
+  });
+}

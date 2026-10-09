@@ -1,0 +1,27 @@
+meta {
+  name: Update line item
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{base_url}}/store/carts/{{cart_id}}/line-items/{{line_item_id}}
+  body: json
+  auth: none
+}
+
+headers {
+  x-publishable-api-key: {{publishable_key}}
+}
+
+body:json {
+  {
+    "quantity": 2
+  }
+}
+
+tests {
+  test("status is 2xx", function () {
+    expect(res.status).to.be.within(200, 299);
+  });
+}

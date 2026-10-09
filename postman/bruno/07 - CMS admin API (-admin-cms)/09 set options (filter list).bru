@@ -1,0 +1,21 @@
+meta {
+  name: set options (filter list)
+  type: http
+  seq: 9
+}
+
+get {
+  url: {{base_url}}/admin/cms?resource=set_options
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{admin_token}}
+}
+
+tests {
+  test("status is 2xx", function () {
+    expect(res.status).to.be.within(200, 299);
+  });
+}

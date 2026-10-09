@@ -1,0 +1,29 @@
+meta {
+  name: order: mark paid / not paid
+  type: http
+  seq: 17
+}
+
+post {
+  url: {{base_url}}/admin/cms
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{admin_token}}
+}
+
+body:json {
+  {
+    "action": "order_payment",
+    "order_id": "{{order_id}}",
+    "paid": true
+  }
+}
+
+tests {
+  test("status is 2xx", function () {
+    expect(res.status).to.be.within(200, 299);
+  });
+}

@@ -1,0 +1,21 @@
+meta {
+  name: Cart availability per variant
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{base_url}}/store/cart-availability?variant_ids={{variant_id}}
+  body: none
+  auth: none
+}
+
+headers {
+  x-publishable-api-key: {{publishable_key}}
+}
+
+tests {
+  test("status is 2xx", function () {
+    expect(res.status).to.be.within(200, 299);
+  });
+}

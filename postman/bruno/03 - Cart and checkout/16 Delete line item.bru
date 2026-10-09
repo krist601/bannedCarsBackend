@@ -1,0 +1,21 @@
+meta {
+  name: Delete line item
+  type: http
+  seq: 16
+}
+
+delete {
+  url: {{base_url}}/store/carts/{{cart_id}}/line-items/{{line_item_id}}
+  body: none
+  auth: none
+}
+
+headers {
+  x-publishable-api-key: {{publishable_key}}
+}
+
+tests {
+  test("status is 2xx", function () {
+    expect(res.status).to.be.within(200, 299);
+  });
+}

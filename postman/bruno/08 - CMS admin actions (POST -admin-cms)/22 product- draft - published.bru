@@ -1,0 +1,30 @@
+meta {
+  name: product: draft / published
+  type: http
+  seq: 22
+}
+
+post {
+  url: {{base_url}}/admin/cms
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{admin_token}}
+}
+
+body:json {
+  {
+    "action": "sealed_status",
+    "section": "{{section}}",
+    "product_id": "{{product_id}}",
+    "status": "published"
+  }
+}
+
+tests {
+  test("status is 2xx", function () {
+    expect(res.status).to.be.within(200, 299);
+  });
+}

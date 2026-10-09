@@ -1,0 +1,30 @@
+meta {
+  name: stock: import preview (text list)
+  type: http
+  seq: 11
+}
+
+post {
+  url: {{base_url}}/admin/cms
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{admin_token}}
+}
+
+body:json {
+  {
+    "action": "stock_import_preview",
+    "text": "2x The One Ring (LTR) 246 *F* S",
+    "condition": "near_mint",
+    "location_id": "{{location_id}}"
+  }
+}
+
+tests {
+  test("status is 2xx", function () {
+    expect(res.status).to.be.within(200, 299);
+  });
+}

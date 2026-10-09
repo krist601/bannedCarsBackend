@@ -1,0 +1,28 @@
+meta {
+  name: set prices: preview
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{base_url}}/admin/cms
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{admin_token}}
+}
+
+body:json {
+  {
+    "action": "set_prices",
+    "set_id": "{{set_id}}"
+  }
+}
+
+tests {
+  test("status is 2xx", function () {
+    expect(res.status).to.be.within(200, 299);
+  });
+}

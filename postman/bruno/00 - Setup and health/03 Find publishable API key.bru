@@ -1,0 +1,25 @@
+meta {
+  name: Find publishable API key
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{base_url}}/admin/api-keys?type=publishable&limit=100
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{admin_token}}
+}
+
+script:post-response {
+  const a=res.body.api_keys||[]; const x=a.find(v=>v.type==='publishable'); if(x&&x.token) bru.setEnvVar('publishable_key',x.token);
+}
+
+tests {
+  test("status is 2xx", function () {
+    expect(res.status).to.be.within(200, 299);
+  });
+}

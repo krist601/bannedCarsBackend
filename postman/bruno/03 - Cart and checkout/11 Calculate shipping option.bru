@@ -1,0 +1,28 @@
+meta {
+  name: Calculate shipping option
+  type: http
+  seq: 11
+}
+
+post {
+  url: {{base_url}}/store/shipping-options/{{shipping_option_id}}/calculate
+  body: json
+  auth: none
+}
+
+headers {
+  x-publishable-api-key: {{publishable_key}}
+}
+
+body:json {
+  {
+    "cart_id": "{{cart_id}}",
+    "data": {}
+  }
+}
+
+tests {
+  test("status is 2xx", function () {
+    expect(res.status).to.be.within(200, 299);
+  });
+}

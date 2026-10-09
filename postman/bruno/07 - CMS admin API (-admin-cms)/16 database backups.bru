@@ -1,0 +1,21 @@
+meta {
+  name: database backups
+  type: http
+  seq: 16
+}
+
+get {
+  url: {{base_url}}/admin/cms?resource=backups
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{admin_token}}
+}
+
+tests {
+  test("status is 2xx", function () {
+    expect(res.status).to.be.within(200, 299);
+  });
+}

@@ -1,0 +1,21 @@
+meta {
+  name: set list update: status
+  type: http
+  seq: 10
+}
+
+get {
+  url: {{base_url}}/admin/cms?resource=set_sync_status
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{admin_token}}
+}
+
+tests {
+  test("status is 2xx", function () {
+    expect(res.status).to.be.within(200, 299);
+  });
+}

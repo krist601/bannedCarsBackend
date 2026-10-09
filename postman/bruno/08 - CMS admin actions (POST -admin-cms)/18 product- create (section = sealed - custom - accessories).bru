@@ -1,0 +1,35 @@
+meta {
+  name: product: create (section = sealed | custom | accessories)
+  type: http
+  seq: 18
+}
+
+post {
+  url: {{base_url}}/admin/cms
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{admin_token}}
+}
+
+body:json {
+  {
+    "action": "sealed_create",
+    "section": "{{section}}",
+    "title": "Example product",
+    "status": "draft",
+    "description": "",
+    "thumbnail": "",
+    "category_id": "",
+    "price_clp": 1000,
+    "sku": ""
+  }
+}
+
+tests {
+  test("status is 2xx", function () {
+    expect(res.status).to.be.within(200, 299);
+  });
+}

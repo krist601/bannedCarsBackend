@@ -1,0 +1,30 @@
+meta {
+  name: stock: subtract
+  type: http
+  seq: 14
+}
+
+post {
+  url: {{base_url}}/admin/cms
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{admin_token}}
+}
+
+body:json {
+  {
+    "action": "subtract",
+    "listing_id": "{{listing_id}}",
+    "location_id": "{{location_id}}",
+    "quantity": 1
+  }
+}
+
+tests {
+  test("status is 2xx", function () {
+    expect(res.status).to.be.within(200, 299);
+  });
+}

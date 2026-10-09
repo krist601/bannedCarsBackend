@@ -1,0 +1,46 @@
+meta {
+  name: Update cart addresses
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{base_url}}/store/carts/{{cart_id}}
+  body: json
+  auth: none
+}
+
+headers {
+  x-publishable-api-key: {{publishable_key}}
+}
+
+body:json {
+  {
+    "email": "{{customer_email}}",
+    "shipping_address": {
+      "first_name": "Postman",
+      "last_name": "Tester",
+      "address_1": "Av. Providencia 1234",
+      "city": "Santiago",
+      "province": "Region Metropolitana",
+      "postal_code": "7500000",
+      "country_code": "cl",
+      "phone": "+56911111111"
+    },
+    "billing_address": {
+      "first_name": "Postman",
+      "last_name": "Tester",
+      "address_1": "Av. Providencia 1234",
+      "city": "Santiago",
+      "province": "Region Metropolitana",
+      "postal_code": "7500000",
+      "country_code": "cl"
+    }
+  }
+}
+
+tests {
+  test("status is 2xx", function () {
+    expect(res.status).to.be.within(200, 299);
+  });
+}

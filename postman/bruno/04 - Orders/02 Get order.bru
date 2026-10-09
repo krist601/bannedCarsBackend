@@ -1,0 +1,25 @@
+meta {
+  name: Get order
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{base_url}}/store/orders/{{order_id}}
+  body: none
+  auth: none
+}
+
+headers {
+  x-publishable-api-key: {{publishable_key}}
+}
+
+script:post-response {
+  const d=res.body.order; if(d&&d.items&&d.items[0]) bru.setEnvVar('order_line_item_id',d.items[0].id);
+}
+
+tests {
+  test("status is 2xx", function () {
+    expect(res.status).to.be.within(200, 299);
+  });
+}

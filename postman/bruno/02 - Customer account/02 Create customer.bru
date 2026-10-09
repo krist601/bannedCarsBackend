@@ -1,0 +1,38 @@
+meta {
+  name: Create customer
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{base_url}}/store/customers
+  body: json
+  auth: bearer
+}
+
+headers {
+  x-publishable-api-key: {{publishable_key}}
+}
+
+auth:bearer {
+  token: {{registration_token}}
+}
+
+body:json {
+  {
+    "email": "{{customer_email}}",
+    "first_name": "Postman",
+    "last_name": "Tester",
+    "phone": "+56911111111"
+  }
+}
+
+script:post-response {
+  const d=res.body.customer; if(d) bru.setEnvVar('customer_id',d.id);
+}
+
+tests {
+  test("status is 2xx", function () {
+    expect(res.status).to.be.within(200, 299);
+  });
+}

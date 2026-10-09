@@ -1,0 +1,25 @@
+meta {
+  name: List variants
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{base_url}}/store/product-variants?limit=100&fields=*calculated_price,+inventory_quantity,+metadata
+  body: none
+  auth: none
+}
+
+headers {
+  x-publishable-api-key: {{publishable_key}}
+}
+
+script:post-response {
+  const a=res.body.variants||[]; if(a[0]) bru.setEnvVar('variant_id',a[0].id);
+}
+
+tests {
+  test("status is 2xx", function () {
+    expect(res.status).to.be.within(200, 299);
+  });
+}
