@@ -20,10 +20,10 @@ const authModule = googleEnabled ? [{
   ] }
 }] : []
 
-// Transactional email (account verification). Without RESEND_API_KEY messages are only logged.
+// Transactional email (account verification, order summaries): EMAIL_DRIVER=ses (Amazon SES) or RESEND_API_KEY (Resend). With neither, messages are only logged.
 const notificationModule = {
   resolve: "@medusajs/medusa/notification",
-  options: { providers: [{ resolve: "./src/modules/email-notification", id: "email", options: { channels: ["email"], apiKey: process.env.RESEND_API_KEY, from: process.env.EMAIL_FROM } }] }
+  options: { providers: [{ resolve: "./src/modules/email-notification", id: "email", options: { channels: ["email"], driver: process.env.EMAIL_DRIVER, apiKey: process.env.RESEND_API_KEY, from: process.env.EMAIL_FROM, region: process.env.SES_REGION, accessKeyId: process.env.SES_ACCESS_KEY_ID || process.env.S3_ACCESS_KEY_ID, secretAccessKey: process.env.SES_SECRET_ACCESS_KEY || process.env.S3_SECRET_ACCESS_KEY } }] }
 }
 
 const fileModule = process.env.FILE_STORAGE_DRIVER === "s3" ? [{

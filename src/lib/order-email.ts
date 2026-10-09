@@ -1,0 +1,18 @@
+type Item = { title: string; quantity: number; unit_price: number }
+type OrderEmail = { display_id: number; email: string; items: Item[]; total: number; created_at?: string | Date; payment_status: "paid" | "not_paid"; customer_name?: string; notes?: string; currency_code?: string }
+
+const clp = (value: number) => new Intl.NumberFormat("es-CL", { style: "currency", currency: "CLP", maximumFractionDigits: 0 }).format(value)
+const escape = (value: string) => value.replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]!))
+
+export function orderSummaryEmail(locale: "es" | "en", order: OrderEmail) {
+  const es = locale !== "en"
+  const t = es
+    ? { subject: `Resumen de tu pedido #${order.display_id} — Banned Cards`, hi: order.customer_name ? `Hola ${order.customer_name},` : "Hola,", intro: "Recibimos tu pedido. Este es el resumen:", order: "Pedido", product: "Producto", qty: "Cant.", price: "Precio", subtotal: "Subtotal", total: "Total", paid: "Pagado", unpaid: "Pago pendiente", status: "Estado del pago", notes: "Tus notas", test: "Este pedido se creó en modo de prueba: no se realizó ningún cobro.", bye: "Gracias por comprar en Banned Cards." }
+    : { subject: `Your order #${order.display_id} summary — Banned Cards`, hi: order.customer_name ? `Hi ${order.customer_name},` : "Hi,", intro: "We received your order. Here is the summary:", order: "Order", product: "Product", qty: "Qty", price: "Price", subtotal: "Subtotal", total: "Total", paid: "Paid", unpaid: "Payment pending", status: "Payment status", notes: "Your notes", test: "This order was created in test mode: no payment was taken.", bye: "Thank you for shopping at Banned Cards." }
+  const paid = order.payment_status === "paid"
+  const status = paid ? t.paid : t.unpaid
+  const rows = order.items.map(item => `<tr><td style="padding:8px 0;border-bottom:1px solid #eee">${escape(item.title)}</td><td style="padding:8px 8px;border-bottom:1px solid #eee;text-align:center">${item.quantity}</td><td style="padding:8px 0;border-bottom:1px solid #eee;text-align:right">${clp(item.unit_price * item.quantity)}</td></tr>`).join("")
+  const html = `<div style="font-family:Arial,Helvetica,sans-serif;max-width:560px;margin:auto;color:#1c1c22;line-height:1.5"><h2 style="margin:0 0 16px">Banned Cards</h2><p>${escape(t.hi)}</p><p>${t.intro}</p><p style="font-size:18px;margin:16px 0 4px"><strong>${t.order} #${order.display_id}</strong></p><p style="margin:0 0 16px"><span style="display:inline-block;padding:3px 10px;border-radius:999px;font-size:13px;font-weight:bold;color:#fff;background:${paid ? "#2e9e6b" : "#d64545"}">${t.status}: ${status}</span></p><table style="width:100%;border-collapse:collapse;font-size:14px"><thead><tr><th style="text-align:left;padding-bottom:6px;border-bottom:2px solid #1c1c22">${t.product}</th><th style="padding-bottom:6px;border-bottom:2px solid #1c1c22">${t.qty}</th><th style="text-align:right;padding-bottom:6px;border-bottom:2px solid #1c1c22">${t.price}</th></tr></thead><tbody>${rows}</tbody></table><p style="text-align:right;font-size:18px;margin:14px 0"><strong>${t.total}: ${clp(order.total)}</strong></p>${order.notes ? `<p style="font-size:13px;color:#555"><strong>${t.notes}:</strong> ${escape(order.notes)}</p>` : ""}<p style="font-size:13px;color:#8a5a00;background:#fff4dc;padding:10px 12px;border-radius:8px">${t.test}</p><p>${t.bye}</p></div>`
+  const text = [t.hi, "", t.intro, `${t.order} #${order.display_id}`, `${t.status}: ${status}`, "", ...order.items.map(item => `${item.quantity} × ${item.title} — ${clp(item.unit_price * item.quantity)}`), "", `${t.total}: ${clp(order.total)}`, "", t.test, t.bye].join("\n")
+  return { subject: t.subject, html, text }
+}
