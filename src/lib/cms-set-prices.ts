@@ -1,6 +1,7 @@
 import { usdToClp } from "./cms-price-conversion";
 import { readPricing, defaultPricing } from "./cms-pricing-settings";
 import { refreshSetBasePrices } from "./cms-base-prices";
+import { cardKingdomPricesForSet, type CkPrices } from "./cardkingdom-prices";
 
 const cache = new Map<string, { expires: number; result: any }>();
 const pending = new Map<string, Promise<any>>();
@@ -29,15 +30,19 @@ export async function fetchScryfallSetCards(code: string, fetcher: typeof fetch 
   return cards;
 }
 
-export async function fetchSetPrices(code: string, fetcher: typeof fetch = fetch, settings = defaultPricing) {
+/** `ck`: Card Kingdom prices by Scryfall id, used first when given (Scryfall fills the cards Card Kingdom does not list). */
+export async function fetchSetPrices(code: string, fetcher: typeof fetch = fetch, settings: {rate:number;minimum:number;rounding?:number;source?:string} = defaultPricing, ck: Map<string, CkPrices> | null = null) {
   const rows: any[] = [];
   for (const card of await fetchScryfallSetCards(code, fetcher)) {
+      const own = ck?.get(card.id);
       rows.push({ id: card.id, name: card.name, collector_number: card.collector_number,
         prices: [
           ["Non-foil", "usd"], ["Foil", "usd_foil"], ["Etched", "usd_etched"],
         ].map(([finish, key]) => {
-          const clp = usdToClp(card.prices?.[key],settings);
-          return { finish, usd: clp === null ? null : card.prices[key], clp };
+          const fromCk = own?.[key as keyof CkPrices] && usdToClp(own[key as keyof CkPrices],settings) !== null;
+          const value = fromCk ? own![key as keyof CkPrices] : card.prices?.[key];
+          const clp = usdToClp(value,settings);
+          return { finish, usd: clp === null ? null : value, clp, source: clp === null ? null : fromCk ? "Card Kingdom" : "Scryfall" };
         }),
       });
   }
@@ -50,13 +55,17 @@ export async function previewSetPrices(req: any, res: any) {
     const set = await req.scope.resolve("tcgCatalog").retrieveCardSet(req.body.set_id);
     const code = String(set.code).toLowerCase();
     const settings = await readPricing(req.scope);
-    const cacheKey = `${code}:${settings.rate}:${settings.minimum}:${settings.rounding}`;
+    const cacheKey = `${code}:${settings.rate}:${settings.minimum}:${settings.rounding}:${settings.source}`;
     let result = cache.get(cacheKey)?.expires! > Date.now() ? cache.get(cacheKey)!.result : null;
     if (!result) {
       let work = pending.get(cacheKey);
       if (!work) {
-        work = fetchSetPrices(code,fetch,settings).then(rows => {
-          const result = {rows, fetched_at:new Date().toISOString(),source:"Scryfall USD",rate:settings.rate,minimum:settings.minimum,rounding:settings.rounding};
+        work = (async () => {
+          let ck: Map<string, CkPrices> | null = null, warning = "";
+          if (settings.source === "cardkingdom") { try { ck = await cardKingdomPricesForSet(code); if (!ck) warning = "Card Kingdom has no price file for this set; Scryfall prices are shown."; } catch (e) { warning = `Card Kingdom prices are unavailable (${(e as Error).message}); Scryfall prices are shown.`; } }
+          return { rows: await fetchSetPrices(code,fetch,settings,ck), warning };
+        })().then(({rows,warning}) => {
+          const result = {rows, warning, fetched_at:new Date().toISOString(),source:settings.source === "cardkingdom" ? "Card Kingdom USD (retail, Near Mint), Scryfall for cards it does not list" : "Scryfall USD",price_source:settings.source,rate:settings.rate,minimum:settings.minimum,rounding:settings.rounding};
           if (cache.size >= 30) cache.delete(cache.keys().next().value!);
           cache.set(cacheKey,{expires:Date.now()+300000,result});
           return result;
@@ -82,8 +91,11 @@ export async function applySetPrices(req: any, res: any) {
     lockKey = set.id;
     if (running.has(lockKey)) return res.status(409).json({message:"A price change is already running for this set."});
     running.add(lockKey);
-    let fetched = 0, matched = 0;
+    let fetched = 0, matched = 0, ckMatched = 0, ckWarning = "";
+    const settings = await readPricing(req.scope);
     if (!reset) {
+      let ck: Map<string, CkPrices> | null = null;
+      if (settings.source === "cardkingdom") { try { ck = await cardKingdomPricesForSet(code); if (!ck) ckWarning = "Card Kingdom has no price file for this set; Scryfall prices were used."; } catch (e) { ckWarning = `Card Kingdom prices are unavailable (${(e as Error).message}); Scryfall prices were used.`; } }
       const cards = new Map((await fetchScryfallSetCards(code)).map(card => [card.id, card]));
       fetched = cards.size;
       if (!fetched) return res.status(404).json({message:"No paper cards found on Scryfall for this set. Nothing was changed."});
@@ -93,13 +105,15 @@ export async function applySetPrices(req: any, res: any) {
           const card = cards.get(printing.external_id);
           if (!card) continue;
           matched++;
-          await catalog.updateCardPrintings({id:printing.id,attributes:{...printing.attributes,scryfall_data:{...printing.attributes?.scryfall_data,prices:card.prices}}});
+          const own = ck?.get(printing.external_id) ?? null;
+          if (own) ckMatched++;
+          await catalog.updateCardPrintings({id:printing.id,attributes:{...printing.attributes,scryfall_data:{...printing.attributes?.scryfall_data,prices:card.prices},...(ck ? {ck_prices:own} : {})}});
         }
         if (printings.length<200) break;
       }
     }
     const summary = await refreshSetBasePrices(req.scope,code,{overrideCustom:reset});
-    return res.json({mode:reset?"reset":"update",set:{id:set.id,name:set.name,code},fetched,matched,...summary});
+    return res.json({mode:reset?"reset":"update",set:{id:set.id,name:set.name,code},fetched,matched,price_source:settings.source,card_kingdom_matched:ckMatched,card_kingdom_warning:ckWarning,...summary});
   } catch (e) { return res.status(502).json({message:(e as Error).message}); }
   finally { if (lockKey) running.delete(lockKey); }
 }

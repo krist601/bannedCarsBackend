@@ -6,6 +6,7 @@ import { previewSetPrices, applySetPrices } from "../../../lib/cms-set-prices";
 import { invalidateCatalogueCache } from "../../../lib/catalogue-cache";
 import { setOrderPayment, paymentStateOf } from "../../../lib/cms-orders";
 import { startSetSync, setSyncStatus } from "../../../lib/cms-set-sync";
+import { startCardKingdomSync, cardKingdomSyncStatus } from "../../../lib/cms-cardkingdom";
 import { lookupScryfallCard, importMissingCard } from "../../../lib/cms-card-autoimport";
 import { basePrice } from "../../../lib/cms-base-prices";
 import { readPricing, pricingSettings } from "../../../lib/cms-pricing-settings";
@@ -102,6 +103,10 @@ export async function GET(
   }
   if (resource === "set_sync_status") {
     res.json(setSyncStatus());
+    return;
+  }
+  if (resource === "ck_prices_status") {
+    res.json(await cardKingdomSyncStatus(req.scope));
     return;
   }
   if (resource === "set_options") {
@@ -302,6 +307,12 @@ export async function POST(
   if(req.body?.action === "pricing_settings") return pricingSettings(req,res);
   if (req.body?.action === "order_payment") return setOrderPayment(req,res);
   if (req.body?.action === "set_sync") return res.json(startSetSync(req.scope));
+  if (req.body?.action === "ck_prices_sync") {
+    // Pricing is for administrators only, like the other pricing settings.
+    const user = await req.scope.resolve(Modules.USER).retrieveUser(req.auth_context.actor_id);
+    if (user.metadata?.isAdmin !== true) return res.status(403).json({ message: "Only administrators can update Card Kingdom prices." });
+    return res.json(startCardKingdomSync(req.scope));
+  }
   if (req.body?.action === "set_prices") return previewSetPrices(req,res);
   if (["set_prices_update","set_prices_reset"].includes(String(req.body?.action))) return applySetPrices(req,res);
   if (["store_save","warehouse_create"].includes(String(req.body?.action))) return cmsStores(req,res);

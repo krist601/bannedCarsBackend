@@ -7,6 +7,7 @@ export const sectionDefaults = {
   homeAccessories: true,
   testCheckout: false,
   webpay: false,
+  cardKingdomPrices: false,
   homeBanner: true,
   homeSealed: true,
   homeSingles: true,

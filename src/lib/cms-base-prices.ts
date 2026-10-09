@@ -3,9 +3,18 @@ import { updateProductVariantsWorkflow, updateProductsWorkflow } from "@medusajs
 import { usdToClp } from "./cms-price-conversion";
 import { readPricing, defaultPricing } from "./cms-pricing-settings";
 
-export function basePrices(printing: any, settings = defaultPricing) {
-  const prices = printing.attributes?.scryfall_data?.prices;
-  return { non_foil: usdToClp(prices?.usd,settings), foil: usdToClp(prices?.usd_foil,settings), etched: usdToClp(prices?.usd_etched,settings) };
+/** CLP base price per finish. With the Card Kingdom source its retail price is used, and Scryfall's price for cards Card Kingdom does not list. */
+export function basePrices(printing: any, settings: {rate:number;minimum:number;rounding?:number;source?:string} = defaultPricing) {
+  const scryfall = printing.attributes?.scryfall_data?.prices;
+  const ck = settings.source === "cardkingdom" ? printing.attributes?.ck_prices : null;
+  const pick = (key: "usd" | "usd_foil" | "usd_etched") => (ck?.[key] ? usdToClp(ck[key],settings) : null) ?? usdToClp(scryfall?.[key],settings);
+  return { non_foil: pick("usd"), foil: pick("usd_foil"), etched: pick("usd_etched") };
+}
+/** Which source each finish's price came from, saved next to the price. */
+export function basePriceSources(printing: any, settings: {rate:number;minimum:number;rounding?:number;source?:string} = defaultPricing) {
+  const ck = settings.source === "cardkingdom" ? printing.attributes?.ck_prices : null;
+  const from = (key: "usd" | "usd_foil" | "usd_etched") => ck?.[key] && usdToClp(ck[key],settings) ? "cardkingdom" : usdToClp(printing.attributes?.scryfall_data?.prices?.[key],settings) ? "scryfall" : null;
+  return { non_foil: from("usd"), foil: from("usd_foil"), etched: from("usd_etched") };
 }
 export function basePrice(printing: any, finish: string, settings = defaultPricing): number | null {
   const prices = printing.attributes?.scryfall_data?.prices ? basePrices(printing,settings) : printing.attributes?.base_prices_clp ?? {};
@@ -28,7 +37,7 @@ export async function refreshSetBasePrices(scope: any, code: string, options: { 
     const printings = await catalog.listCardPrintings({set_id:set.id}, {take:200,skip,order:{id:"ASC"}});
     for (const printing of printings) {
       const prices = basePrices(printing,settings);
-      await catalog.updateCardPrintings({id:printing.id,attributes:{...printing.attributes,base_prices_clp:prices,base_price_rate:settings.rate,base_price_minimum:settings.minimum,base_price_rounding:settings.rounding,base_prices_updated_at:new Date().toISOString()}});
+      await catalog.updateCardPrintings({id:printing.id,attributes:{...printing.attributes,base_prices_clp:prices,base_price_source:settings.source ?? "scryfall",base_price_sources:basePriceSources(printing,settings),base_price_rate:settings.rate,base_price_minimum:settings.minimum,base_price_rounding:settings.rounding,base_prices_updated_at:new Date().toISOString()}});
       summary.printings++;
       for(let offset=0;;offset+=200) {
         const listings = await catalog.listCardListings({printing_id:printing.id},{take:200,skip:offset,order:{id:"ASC"}});
