@@ -20,6 +20,12 @@ const authModule = googleEnabled ? [{
   ] }
 }] : []
 
+// Transactional email (account verification). Without RESEND_API_KEY messages are only logged.
+const notificationModule = {
+  resolve: "@medusajs/medusa/notification",
+  options: { providers: [{ resolve: "./src/modules/email-notification", id: "email", options: { channels: ["email"], apiKey: process.env.RESEND_API_KEY, from: process.env.EMAIL_FROM } }] }
+}
+
 const fileModule = process.env.FILE_STORAGE_DRIVER === "s3" ? [{
   resolve: "@medusajs/medusa/file",
   options: {
@@ -61,5 +67,5 @@ export default defineConfig({
     },
     workerMode: (process.env.WORKER_MODE as "shared" | "server" | "worker") || "shared"
   },
-  modules: [{ resolve: "./src/modules/tcg-catalog" }, ...fileModule, ...authModule]
+  modules: [{ resolve: "./src/modules/tcg-catalog" }, ...fileModule, ...authModule, notificationModule]
 })

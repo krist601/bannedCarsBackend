@@ -7,6 +7,7 @@ export type ImportRow = {
   finish: string;
   language: string;
   printing_id?: string;
+  import_card?: boolean;
   error?: string;
   warning?: string;
 };

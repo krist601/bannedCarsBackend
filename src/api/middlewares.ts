@@ -16,6 +16,8 @@ export default defineMiddlewares({
     { matcher: "/store/auth/google/complete", method: ["POST"], middlewares: [authenticate("customer", ["bearer"], { allowUnregistered: true })] },
     {
       matcher: "/admin/cms*",
+      // Product images are sent as base64 JSON (5 MB images).
+      bodyParser: { sizeLimit: "10mb" },
       middlewares: [
         authenticate("user", ["bearer", "session"]),
         async (
@@ -30,7 +32,7 @@ export default defineMiddlewares({
             );
           const permissions = cmsPermissions(user);
           const key = req.method === "GET" ? String(req.query.resource || "overview") : String((req.body as any)?.action || "");
-          if (!canAccessCms(user, req.method, key, (req.body as any)?.location_id || (req.query as any)?.location_id)) {
+          if (!canAccessCms(user, req.method, key, (req.body as any)?.location_id || (req.query as any)?.location_id, req.method === "GET" ? (req.query as any)?.section : (req.body as any)?.section)) {
             res
               .status(403)
               .json({ message: "You do not have access to this section or warehouse." });
@@ -58,5 +60,7 @@ export default defineMiddlewares({
       }],
     },
     { matcher: "/store/carts*", middlewares: [storeCartGuard] },
+    { matcher: "/store/test-checkout", method: ["GET", "POST"], middlewares: [authenticate("customer", ["session", "bearer"])] },
+    { matcher: "/store/email-verification", method: ["GET", "POST"], middlewares: [authenticate("customer", ["session", "bearer"])] },
   ],
 });

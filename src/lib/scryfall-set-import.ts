@@ -1,4 +1,4 @@
-const SCRYFALL_API = "https://api.scryfall.com"
+export const SCRYFALL_API = "https://api.scryfall.com"
 const REQUEST_INTERVAL_MS = 100
 const SET_ALIASES: Record<string, string> = { tlr: "ltr" }
 
@@ -32,7 +32,7 @@ export function normalizeScryfallSetCode(value: string) {
   return SET_ALIASES[requested] ?? requested
 }
 
-async function getJson<T>(url: string, fetcher: typeof fetch): Promise<T> {
+export async function getJson<T>(url: string, fetcher: typeof fetch): Promise<T> {
   const response = await fetcher(url, {
     headers: {
       "User-Agent": process.env.SCRYFALL_USER_AGENT || "BannedCards/0.1 (catalog-import)",
@@ -52,7 +52,7 @@ function imageUrls(card: ScryfallCard) {
   return { normal: images?.normal ?? images?.large ?? null, small: images?.small ?? images?.normal ?? images?.large ?? null }
 }
 
-function printingData(card: ScryfallCard, gameId: string, setId: string, existing?: ExistingPrinting) {
+export function printingData(card: ScryfallCard, gameId: string, setId: string, existing?: ExistingPrinting) {
   const images = imageUrls(card)
   const priorAttributes = existing?.attributes ?? {}
   const hasStoredImages = typeof priorAttributes.image_storage_url === "string"

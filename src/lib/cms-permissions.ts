@@ -5,6 +5,8 @@ export const CMS_SECTIONS = [
   "sets",
   "stock",
   "sealed",
+  "custom",
+  "accessories",
   "orders",
 ];
 export function cmsPermissions(user: any) {
@@ -38,6 +40,7 @@ const reads: Record<string, string[]> = {
   cards: ["cards"],
   sets: ["sets"],
   set_options: ["cards", "stock", "sets"],
+  set_sync_status: ["sets"],
   stock: ["stock", "cards"],
   sealed: ["sealed"],
   orders: ["orders"],
@@ -50,6 +53,10 @@ const writes: Record<string, string[]> = {
   pricing_settings: ["pricing"],
   warehouse_create: ["stores"],
   set_prices: ["sets"],
+  set_prices_update: ["sets"],
+  set_sync: ["sets"],
+  order_payment: ["orders"],
+  set_prices_reset: ["sets"],
   user_save: ["users"],
   user_create: ["users"],
   storefront_settings: ["storefront"],
@@ -64,6 +71,7 @@ const writes: Record<string, string[]> = {
   import: ["sets"],
   set_visibility: ["sets"],
   sealed_create: ["sealed"],
+  sealed_image: ["sealed"],
   sealed_save: ["sealed"],
   sealed_price: ["sealed"],
   sealed_stock: ["sealed"],
@@ -78,9 +86,16 @@ export function canAccessCms(
   method: string,
   key: string,
   location?: unknown,
+  productSection?: unknown,
 ) {
   const p = cmsPermissions(user);
   if (!p.enabled) return false;
+  // Custom products and accessories reuse the sealed product actions but have their own permission.
+  if ((productSection === "custom" || productSection === "accessories") && /^sealed(_(create|save|price|stock|status|image))?$/.test(key)) {
+    if (!p.sections.includes(productSection)) return false;
+    return !location || p.warehouseIds === null || p.warehouseIds.includes(location);
+  }
+  if (productSection !== undefined && productSection !== "" && productSection !== "sealed" && /^sealed(_|$)/.test(key)) return false;
   if (method !== "GET" && ["sealed_create", "sealed_accept"].includes(key) && !p.canCreateSealed) return false;
   const sections = (method === "GET" ? reads : writes)[key];
   if (

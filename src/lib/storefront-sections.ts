@@ -1,6 +1,11 @@
 export const sectionDefaults = {
   sealed: true,
   singles: true,
+  custom: true,
+  accessories: true,
+  homeCustom: true,
+  homeAccessories: true,
+  testCheckout: false,
   homeBanner: true,
   homeSealed: true,
   homeSingles: true,

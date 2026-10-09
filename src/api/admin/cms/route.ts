@@ -2,7 +2,11 @@ import {getStorefrontSettings,saveStorefrontSettings} from "../../../lib/storefr
 import { cmsUsers } from "../../../lib/cms-users";
 import { cmsBackups } from "../../../lib/cms-backups";
 import { cmsStores, allowedStockChannels, productStoreChannels } from "../../../lib/cms-stores";
-import { previewSetPrices } from "../../../lib/cms-set-prices";
+import { previewSetPrices, applySetPrices } from "../../../lib/cms-set-prices";
+import { invalidateCatalogueCache } from "../../../lib/catalogue-cache";
+import { setOrderPayment, paymentStateOf } from "../../../lib/cms-orders";
+import { startSetSync, setSyncStatus } from "../../../lib/cms-set-sync";
+import { lookupScryfallCard, importMissingCard } from "../../../lib/cms-card-autoimport";
 import { basePrice } from "../../../lib/cms-base-prices";
 import { readPricing, pricingSettings } from "../../../lib/cms-pricing-settings";
 import { sealedFinder } from "../../../lib/cms-sealed-finder";
@@ -82,8 +86,22 @@ export async function GET(
       sets.push(...page);
       if (page.length < 500) break;
     }
-    const groups = groupCmsSets(sets);
+    // Search by set name or code; a match on any division keeps the whole family.
+    const term = String(req.query.q ?? "").trim().toLowerCase().slice(0, 100);
+    const groups = groupCmsSets(sets).filter(
+      (group) =>
+        !term ||
+        group.divisions.some(
+          (set) =>
+            set.code.toLowerCase().startsWith(term) ||
+            set.name.toLowerCase().includes(term),
+        ),
+    );
     res.json({ rows: groups.slice(skip, skip + 30), count: groups.length });
+    return;
+  }
+  if (resource === "set_sync_status") {
+    res.json(setSyncStatus());
     return;
   }
   if (resource === "set_options") {
@@ -237,6 +255,8 @@ export async function GET(
         "created_at",
         "currency_code",
         "total",
+        "metadata",
+        "payment_status",
         "items.*",
         "shipping_address.*",
       ],
@@ -247,7 +267,7 @@ export async function GET(
       },
       pagination: config,
     });
-    res.json({ rows: data, count: metadata?.count || 0 });
+    res.json({ rows: data.map((order: any) => ({ ...order, payment: paymentStateOf(order), test_order: order.metadata?.test_order === true })), count: metadata?.count || 0 });
     return;
   }
   if (resource === "overview") {
@@ -276,9 +296,14 @@ export async function POST(
   req: AuthenticatedMedusaRequest<Record<string, unknown>>,
   res: MedusaResponse,
 ) {
+  // Any CMS write may change stock, prices or visibility: drop the cached storefront catalogue once it finishes.
+  res.on("finish", invalidateCatalogueCache);
   if(["backup_create","backup_restore","backup_resume"].includes(String(req.body?.action || ""))) return cmsBackups(req,res);
   if(req.body?.action === "pricing_settings") return pricingSettings(req,res);
+  if (req.body?.action === "order_payment") return setOrderPayment(req,res);
+  if (req.body?.action === "set_sync") return res.json(startSetSync(req.scope));
   if (req.body?.action === "set_prices") return previewSetPrices(req,res);
+  if (["set_prices_update","set_prices_reset"].includes(String(req.body?.action))) return applySetPrices(req,res);
   if (["store_save","warehouse_create"].includes(String(req.body?.action))) return cmsStores(req,res);
   if (req.body?.action === "storefront_settings") return saveStorefrontSettings(req,res,req.body);
   if (["user_save", "user_create"].includes(String(req.body?.action))) return cmsUsers(req,res);
@@ -321,17 +346,21 @@ async function handleAction(
     await req.scope
       .resolve(Modules.STOCK_LOCATION)
       .retrieveStockLocation(body.location_id);
+    // Cards missing from the catalog are looked up on Scryfall and imported when the stock is applied.
+    const lookups = new Map<string, Awaited<ReturnType<typeof lookupScryfallCard>>>();
     for (const row of rows) {
       if (row.error) continue;
       const sets = await catalog.listCardSets({ code: row.code }, { take: 2 });
-      if (sets.length !== 1) {
-        row.error = "Set code not found in catalog. Import the set first.";
+      if (sets.length > 1) {
+        row.error = "Set code matches more than one set in the catalog.";
         continue;
       }
-      const [printings] = await catalog.listAndCountCardPrintings(
-        { set_id: sets[0].id, collector_number: row.collector },
-        { take: 100 },
-      );
+      const [printings] = sets.length
+        ? await catalog.listAndCountCardPrintings(
+            { set_id: sets[0].id, collector_number: row.collector },
+            { take: 100 },
+          )
+        : [[]];
       const matches = printings.filter(
         (p) => normalizeImportName(p.name) === normalizeImportName(row.name),
       );
@@ -339,6 +368,28 @@ async function handleAction(
       // collector match when a pasted name has a typo or uses a different
       // apostrophe/split-name spelling; the preview shows the catalog name.
       const resolved = matches.length === 1 ? matches : printings.length === 1 ? printings : [];
+      if (resolved.length !== 1 && !printings.length) {
+        const key = `${row.code}:${row.collector}`;
+        try {
+          if (!lookups.has(key)) {
+            lookups.set(key, await lookupScryfallCard(row.code, row.collector));
+            await new Promise((resolve) => setTimeout(resolve, 100));
+          }
+        } catch (error) {
+          row.error = `Card is not in the catalog and Scryfall could not be reached: ${(error as Error).message}`;
+          continue;
+        }
+        const found = lookups.get(key);
+        if (!found) {
+          row.error = sets.length
+            ? "Card not found in this set in the catalog or on Scryfall."
+            : "Set code not found in the catalog or on Scryfall.";
+          continue;
+        }
+        row.import_card = true;
+        row.warning = `Not in catalog: will import ${found.name} from Scryfall${normalizeImportName(found.name) === normalizeImportName(row.name) ? "" : " (pasted name differs)"}`;
+        continue;
+      }
       if (resolved.length !== 1) {
         row.error =
           "Card name and collector number must match exactly one printing in this set.";
@@ -356,6 +407,23 @@ async function handleAction(
         valid: rows.every((row) => !row.error),
         applied: false,
       });
+      return;
+    }
+    const imports = new Map<string, Awaited<ReturnType<typeof importMissingCard>>>();
+    for (const row of rows) {
+      if (!row.import_card) continue;
+      const key = `${row.code}:${row.collector}`;
+      try {
+        if (!imports.has(key)) imports.set(key, await importMissingCard(req.scope, row.code, row.collector));
+        const imported = imports.get(key)!;
+        row.printing_id = imported.printing_id;
+        row.warning = imported.warnings.length ? `Imported from Scryfall. ${imported.warnings.join(" ")}` : "Imported from Scryfall.";
+      } catch (error) {
+        row.error = `Could not import from Scryfall: ${(error as Error).message}`;
+      }
+    }
+    if (rows.some((row) => row.error)) {
+      res.json({ rows, valid: false, applied: false });
       return;
     }
     const results = [];
@@ -391,7 +459,7 @@ async function handleAction(
         ...row,
         ok: code < 400 && result.ok === true,
         message: result.message,
-        warning: result.warning,
+        warning: result.warning ?? row.warning,
       });
       if (code >= 400 || result.ok !== true || result.warning) break;
     }

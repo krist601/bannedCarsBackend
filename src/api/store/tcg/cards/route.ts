@@ -1,3 +1,4 @@
+import { cachedCatalogue } from "../../../../lib/catalogue-cache"
 import { cataloguePage } from "../../../../lib/catalogue-page"
 import { scopeCardListings, storeWarehouseIds } from "../../../../lib/store-warehouse-scope"
 import type { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
@@ -41,6 +42,7 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
     if ([q, sets, ranked].some(value => value !== undefined && typeof value !== "string")) {
       res.status(400).json({ message: "Invalid catalogue filters" }); return
     }
+    const projected = await cachedCatalogue(JSON.stringify([stockScope.channel, stockScope.locations]), async () => {
     const all: CataloguePrinting[] = []
     for (let skip = 0; ; skip += 500) {
       const [batch] = await catalog.listAndCountCardPrintings({}, { skip, take: 500, order: { id: "ASC" } })
@@ -57,6 +59,8 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
       }
       projected.push(...projectCardCatalogue(batch, sets, await scopeCardListings(req,listings,stockScope)))
     }
+    return projected
+    })
     res.json(cataloguePage(projected, { offset, limit, sort: sort as "added" | "release" | undefined, showOutOfStock: showOutOfStock !== "false", q: q as string | undefined, sets: sets === undefined ? undefined : String(sets).split(","), rankedIds: ranked === undefined ? undefined : String(ranked).split(",") }))
     return
   }

@@ -21,7 +21,8 @@
     "infra:logs": "docker compose logs -f postgres redis minio minio-init",
     "test": "node --test -r ts-node/register tests/*.test.cjs",
     "typecheck": "tsc --noEmit",
-    "sets:sync": "medusa exec ./src/scripts/sync-set-directory.ts"
+    "sets:sync": "medusa exec ./src/scripts/sync-set-directory.ts",
+    "catalog:seed-demo-shop": "medusa exec ./src/scripts/seed-demo-shop-sections.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1146.0",

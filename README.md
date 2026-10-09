@@ -113,7 +113,7 @@ Never commit Mercado Pago access tokens, webhook secrets, database passwords, or
 
 ## Set directory and hottest singles
 
-Run `pnpm sets:sync` once to import all Scryfall set metadata and store SVG icons using the configured File Module. The `sync-set-directory` scheduled job refreshes this daily while a shared/worker Medusa process is running. Keep the existing S3/MinIO/R2 configuration and persistent storage enabled. New set metadata and icons appear without a frontend deployment. Missing icons use a frontend fallback and retry on the next sync. A failed upstream fetch preserves the previously saved directory. Set metadata sync does not import card printings or create stock.
+Run `pnpm sets:sync` once to import all Scryfall set metadata and store SVG icons using the configured File Module. There is no scheduled job: press **Update list** in the CMS Sets section (or run `pnpm sets:sync`) to refresh set metadata and icons. Keep the existing S3/MinIO/R2 configuration and persistent storage enabled. New set metadata and icons appear without a frontend deployment. Missing icons use a frontend fallback and retry on the next sync. A failed upstream fetch preserves the previously saved directory. Set metadata sync does not import card printings or create stock.
 
 - `GET /store/tcg/sets?limit=10&offset=0`: flat page of up to ten sets plus `offset`, `nextOffset`, `previousOffset`, and `latestSetCodes`.
 - `q=<name-or-code>` searches all visible sets before pagination. Only `metadata.isVisible === true` is included; no parent/block visibility gating applies to this endpoint.

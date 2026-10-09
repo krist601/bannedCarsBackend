@@ -9,8 +9,39 @@ import {
   linkSalesChannelsToStockLocationWorkflow,
 } from "@medusajs/medusa/core-flows";
 
-export function sealedCategoryIds(categories: any[]) {
-  const root = categories.find((c) => c.handle === "sealed-products");
+/** Product sections managed with the same CMS screen. `sealed` keeps its legacy handles and metadata. */
+export const SHOP_SECTIONS = {
+  sealed: { root: "sealed-products", name: "Sealed products", kind: "sealed", skuPrefix: "SEALED", groups: [] as string[][] },
+  custom: {
+    root: "custom-products", name: "Custom products", kind: "custom", skuPrefix: "CUSTOM",
+    groups: [["custom-token-packs", "Token packs"], ["custom-decks", "Custom decks"], ["custom-other", "Other"]],
+  },
+  accessories: {
+    root: "accessories", name: "Accessories", kind: "accessory", skuPrefix: "ACC",
+    groups: [["accessories-sleeves", "Sleeves"], ["accessories-dice", "Dice"], ["accessories-playmats", "Playmats"], ["accessories-deck-boxes", "Deck boxes"], ["accessories-other", "Other"]],
+  },
+} as const;
+export type ShopSectionKey = keyof typeof SHOP_SECTIONS;
+export function shopSection(value: unknown) {
+  const key = (value === undefined || value === "" ? "sealed" : String(value)) as ShopSectionKey;
+  if (!(key in SHOP_SECTIONS)) throw new Error("Unknown product section.");
+  return { key, ...SHOP_SECTIONS[key] };
+}
+/** Creates the section's root category and default groups the first time they are needed. */
+async function ensureSection(scope: any, section: ReturnType<typeof shopSection>) {
+  if (section.key === "sealed") return;
+  const service = scope.resolve(Modules.PRODUCT);
+  await scope.resolve(Modules.LOCKING).execute(`cms-section:${section.key}`, async () => {
+    let [root] = await service.listProductCategories({ handle: section.root });
+    if (!root) root = await service.createProductCategories({ handle: section.root, name: section.name, is_active: true, is_internal: false });
+    for (const [handle, name] of section.groups) {
+      const [existing] = await service.listProductCategories({ handle });
+      if (!existing) await service.createProductCategories({ handle, name, parent_category_id: root.id, is_active: true, is_internal: false });
+    }
+  });
+}
+export function sealedCategoryIds(categories: any[], rootHandle = "sealed-products") {
+  const root = categories.find((c) => c.handle === rootHandle);
   const ids = new Set<string>();
   if (!root) return ids;
   ids.add(root.id);
@@ -25,7 +56,8 @@ export function sealedCategoryIds(categories: any[]) {
   }
   return ids;
 }
-async function directory(scope: any) {
+export async function directory(scope: any, section = shopSection("sealed")) {
+  await ensureSection(scope, section);
   const service = scope.resolve(Modules.PRODUCT);
   const categories: any[] = [];
   for (let skip = 0; ; skip += 100) {
@@ -36,8 +68,8 @@ async function directory(scope: any) {
     categories.push(...page);
     if (page.length < 100) break;
   }
-  const ids = sealedCategoryIds(categories);
-  return { service, categories: categories.filter((c) => ids.has(c.id)), ids };
+  const ids = sealedCategoryIds(categories, section.root);
+  return { service, categories: categories.filter((c) => ids.has(c.id)), ids, section };
 }
 export function sealedInput(body: any) {
   const title = String(body.title || "").trim();
@@ -78,7 +110,7 @@ async function product(scope: any, id: string, ids: Set<string>) {
     .resolve(Modules.PRODUCT)
     .retrieveProduct(id, { relations: ["categories", "variants"] });
   if (!(p.categories || []).some((c: any) => ids.has(c.id)))
-    throw new Error("This product is not in a sealed category.");
+    throw new Error("This product is not in this section.");
   return p;
 }
 async function variant(scope: any, id: string) {
@@ -100,7 +132,9 @@ async function variant(scope: any, id: string) {
   return data[0];
 }
 export async function getSealed(req: any, res: any) {
-  const { service, categories, ids } = await directory(req.scope);
+  let section;
+  try { section = shopSection(req.query.section); } catch (error) { res.status(400).json({ message: (error as Error).message }); return; }
+  const { service, categories, ids } = await directory(req.scope, section);
   const offset = Number(req.query.offset || 0);
   if (!Number.isSafeInteger(offset) || offset < 0) {
     res.status(400).json({ message: "Invalid offset" });
@@ -165,12 +199,12 @@ export async function getSealed(req: any, res: any) {
   res.json({ rows, count, categories });
 }
 export async function postSealed(req: any, res: any, body: any) {
-  const { categories, ids } = await directory(req.scope);
   try {
+  const { categories, ids, section } = await directory(req.scope, shopSection(body.section));
     if (body.action === "sealed_create") {
       const input = sealedInput(body);
       const amount = price(body.price_clp);
-      if (!ids.has(body.category_id)) throw new Error("Select a sealed group.");
+      if (!ids.has(body.category_id)) throw new Error("Select a group.");
       const [channel] = await req.scope
         .resolve(Modules.SALES_CHANNEL)
         .listSalesChannels({}, { take: 1 });
@@ -181,36 +215,39 @@ export async function postSealed(req: any, res: any, body: any) {
         throw new Error(
           "Configure a sales channel and shipping profile first.",
         );
-      const root = categories.find((c) => c.handle === "sealed-products");
+      const root = categories.find((c) => c.handle === section.root);
       const { set, set_code, language, ...fields } = input;
+      const sealed = section.key === "sealed";
       await createProductsWorkflow(req.scope).run({
         input: {
           products: [
             {
               ...fields,
-              handle: `sealed-${randomUUID()}`,
+              handle: `${section.key}-${randomUUID()}`,
               shipping_profile_id: profile.id,
               sales_channels: await productStoreChannels(req.scope,channel.id),
               category_ids: [...new Set([root.id, body.category_id])],
-              metadata: {
-                kind: "sealed",
-                game: "magic-the-gathering",
-                set,
-                set_code,
-                language,
-                finish: "Sealed",
-                condition: "Factory sealed",
-              },
-              options: [{ title: "Language", values: [language] }],
+              metadata: sealed
+                ? {
+                    kind: "sealed",
+                    game: "magic-the-gathering",
+                    set,
+                    set_code,
+                    language,
+                    finish: "Sealed",
+                    condition: "Factory sealed",
+                  }
+                : { kind: section.kind, section: section.key },
+              options: [{ title: sealed ? "Language" : "Type", values: [sealed ? language : "Standard"] }],
               variants: [
                 {
-                  title: language,
+                  title: sealed ? language : "Standard",
                   sku:
-                    String(body.sku || "").trim() || `SEALED-${randomUUID()}`,
+                    String(body.sku || "").trim() || `${section.skuPrefix}-${randomUUID()}`,
                   manage_inventory: true,
                   allow_backorder: false,
-                  options: { Language: language },
-                  metadata: { language },
+                  options: sealed ? { Language: language } : { Type: "Standard" },
+                  metadata: sealed ? { language } : {},
                   prices: [{ currency_code: "clp", amount }],
                 },
               ],
@@ -219,6 +256,27 @@ export async function postSealed(req: any, res: any, body: any) {
         },
       });
       res.status(201).json({ ok: true });
+      return;
+    }
+    if (body.action === "sealed_image") {
+      const types: Record<string, string> = { "image/png": "png", "image/jpeg": "jpg", "image/webp": "webp" };
+      const extension = types[String(body.mime_type)];
+      const content = String(body.content || "");
+      if (!extension) throw new Error("Use a PNG, JPEG or WebP image.");
+      if (!/^[A-Za-z0-9+/]+={0,2}$/.test(content)) throw new Error("The image could not be read.");
+      const bytes = Buffer.from(content, "base64");
+      if (!bytes.length || bytes.length > 5 * 1024 * 1024) throw new Error("The image must be 5 MB or smaller.");
+      const signatures: Record<string, boolean> = {
+        png: bytes.subarray(0, 4).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47])),
+        jpg: bytes.subarray(0, 3).equals(Buffer.from([0xff, 0xd8, 0xff])),
+        webp: bytes.subarray(0, 4).toString("latin1") === "RIFF" && bytes.subarray(8, 12).toString("latin1") === "WEBP",
+      };
+      if (!signatures[extension]) throw new Error("The file is not a valid image.");
+      const file = await req.scope.resolve(Modules.FILE).createFiles({
+        filename: `products/${section.key}/${randomUUID()}.${extension}`,
+        mimeType: String(body.mime_type), content, access: "public",
+      });
+      res.json({ ok: true, url: file.url });
       return;
     }
     if (typeof body.product_id !== "string")
@@ -269,8 +327,8 @@ export async function postSealed(req: any, res: any, body: any) {
           }
 
           if (!ids.has(body.category_id))
-            throw new Error("Select a sealed group.");
-          const root = categories.find((c) => c.handle === "sealed-products");
+            throw new Error("Select a group.");
+          const root = categories.find((c) => c.handle === section.root);
           const category_ids = [
             ...new Set([
               ...(p.categories || [])
@@ -295,10 +353,8 @@ export async function postSealed(req: any, res: any, body: any) {
                           product_cutout: fields.thumbnail || "",
                         }
                       : {}),
-                    kind: "sealed",
-                    set,
-                    set_code,
-                    language,
+                    kind: section.kind,
+                    ...(section.key === "sealed" ? { set, set_code, language } : { section: section.key }),
                   },
                 },
               ],
@@ -306,7 +362,7 @@ export async function postSealed(req: any, res: any, body: any) {
           });
         } else {
           if (!(p.variants || []).some((v: any) => v.id === body.variant_id))
-            throw new Error("Variant does not belong to this sealed product.");
+            throw new Error("Variant does not belong to this product.");
           if (body.action === "sealed_price") {
             const amount = price(body.price_clp);
             // Preserve prices in other currencies; only replace base CLP pricing.
