@@ -4,6 +4,7 @@ import { normalizeSections } from "./storefront-sections"
 import { storeWarehouseIds } from "./store-warehouse-scope"
 import { orderSummaryEmail, storeOrderEmail, type Delivery, type TaxDocument } from "./order-email"
 import { formatRut, isValidRut } from "./rut"
+import { webpayConfig } from "./webpay"
 import { invalidateCatalogueCache } from "./catalogue-cache"
 
 export type CheckoutLine = {
@@ -57,6 +58,11 @@ export class CheckoutError extends Error {
 export async function testCheckoutEnabled(scope: any) {
   const [store] = await scope.resolve(Modules.STORE).listStores({}, { take: 1 })
   return normalizeSections(store?.metadata?.storefront_sections).testCheckout === true
+}
+
+export async function webpayEnabled(scope: any) {
+  const [store] = await scope.resolve(Modules.STORE).listStores({}, { take: 1 })
+  return normalizeSections(store?.metadata?.storefront_sections).webpay === true
 }
 
 async function readCheckoutState(req: any, cart: any, stockScope: { channel: string; locations: string[] }) {
@@ -115,8 +121,19 @@ export function readCheckoutDetails(contact: Contact | undefined) {
   return { ...base, document: { type: "factura" as const, rut: formatRut(company.rut), company: { ...company, rut: formatRut(company.rut) } } }
 }
 
-export async function placeTestOrder(req: any, customerId: string, body: { cart_id?: unknown; contact?: Contact; locale?: unknown }) {
-  if (!(await testCheckoutEnabled(req.scope))) throw new CheckoutError(403, "test_checkout_disabled", "Test checkout is turned off.")
+export type PaymentMode = "test" | "webpay"
+type CheckoutBody = { cart_id?: unknown; contact?: Contact; locale?: unknown }
+
+/**
+ * Re-checks stock, creates the order, reserves the stock and completes the cart. The order is saved as "not paid".
+ * mode "test": the unpaid test order. mode "webpay": the order waits for the Webpay payment (see webpay-orders.ts).
+ */
+export async function createCheckoutOrder(req: any, customerId: string, body: CheckoutBody, mode: PaymentMode) {
+  if (mode === "test" && !(await testCheckoutEnabled(req.scope))) throw new CheckoutError(403, "test_checkout_disabled", "Test checkout is turned off.")
+  if (mode === "webpay") {
+    if (!(await webpayEnabled(req.scope))) throw new CheckoutError(403, "webpay_disabled", "Webpay payments are turned off.")
+    try { webpayConfig() } catch { throw new CheckoutError(503, "webpay_not_configured", "Webpay is not configured yet.") }
+  }
   if (typeof body.cart_id !== "string" || !body.cart_id) throw new CheckoutError(400, "cart_required", "Cart is required.")
   const carts = req.scope.resolve(Modules.CART)
   let cart
@@ -131,6 +148,7 @@ export async function placeTestOrder(req: any, customerId: string, body: { cart_
   const locale = body.locale === "en" ? "en" : "es"
   const contact = body.contact ?? {}
   const details = readCheckoutDetails(contact)
+  if (mode === "webpay" && !details.document) throw new CheckoutError(400, "invalid_contact", "Delivery and document details are required.")
   const fullName = [details.name, details.lastName].filter(Boolean).join(" ")
   const name = fullName, phone = details.phone, address = details.address, city = details.city, notes = details.notes
 
@@ -150,7 +168,8 @@ export async function placeTestOrder(req: any, customerId: string, body: { cart_
         items: cart.items.map((item: any) => ({ variant_id: item.variant_id, quantity: Number(item.quantity), unit_price: Number(item.unit_price), title: item.title, ...(item.thumbnail ? { thumbnail: item.thumbnail } : {}) })),
         ...(address || phone || name ? { shipping_address: { first_name: details.name || customer.first_name || "", last_name: details.lastName || customer.last_name || "", address_1: address, ...(details.address2 ? { address_2: details.address2 } : {}), city, ...(details.region ? { province: details.region } : {}), phone, country_code: "cl", ...(details.document?.type === "factura" ? { company: details.document.company!.name } : {}) } } : {}),
         metadata: {
-          test_order: true, payment_status: "not_paid", payment_updated_at: new Date().toISOString(), customer_notes: notes || undefined, contact_phone: phone || undefined, contact_name: name || undefined,
+          test_order: mode === "test" ? true : webpayConfig().environment !== "production", payment_status: "not_paid",
+          ...(mode === "webpay" ? { payment_method: "webpay", webpay_status: "pending", cart_id: cart.id, locale, customer_first_name: details.name || customer.first_name || "" } : {}), payment_updated_at: new Date().toISOString(), customer_notes: notes || undefined, contact_phone: phone || undefined, contact_name: name || undefined,
           ...(details.document ? { document_type: details.document.type, document_rut: details.document.rut, ...(details.document.company ? { company: details.document.company } : {}), shipping_method: "starken_por_pagar", delivery_region: details.region, delivery_comuna: city, delivery_address: [address, details.address2].filter(Boolean).join(", "), ...(details.branch ? { starken_branch: details.branch } : {}) } : {}),
         },
       },
@@ -164,11 +183,19 @@ export async function placeTestOrder(req: any, customerId: string, body: { cart_
         inventory_item_id: reservation.inventory_item_id, location_id: reservation.location_id, quantity: reservation.quantity, line_item_id: lineByVariant.get(reservation.variant_id),
       })))
     }
-    await carts.updateCarts([{ id: cart.id, completed_at: new Date() }])
+    // Test orders close the cart now. Webpay orders keep it open until the payment is approved, so a failed payment can be retried.
+    if (mode === "test") await carts.updateCarts([{ id: cart.id, completed_at: new Date() }])
     return full
   })
 
   invalidateCatalogueCache()
+  return { created, customer, details, locale: locale as "en" | "es", fullName }
+}
+
+/** Test checkout: the unpaid order plus its emails right away. */
+export async function placeTestOrder(req: any, customerId: string, body: CheckoutBody) {
+  const { created, customer, details, locale, fullName } = await createCheckoutOrder(req, customerId, body, "test")
+  const phone = details.phone, address = details.address, city = details.city, notes = details.notes
   let emailSent = false
   try {
     const delivery: Delivery | undefined = details.document ? { name: fullName, phone, address, address2: details.address2, comuna: city, region: details.region, branch: details.branch, shipping: "starken" } : undefined

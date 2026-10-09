@@ -61,6 +61,7 @@ export default defineMiddlewares({
     },
     { matcher: "/store/carts*", middlewares: [storeCartGuard] },
     { matcher: "/store/test-checkout", method: ["GET", "POST"], middlewares: [authenticate("customer", ["session", "bearer"])] },
+    { matcher: "/store/webpay/create", method: ["POST"], middlewares: [authenticate("customer", ["session", "bearer"])] },
     { matcher: "/store/email-verification", method: ["GET", "POST"], middlewares: [authenticate("customer", ["session", "bearer"])] },
   ],
 });
