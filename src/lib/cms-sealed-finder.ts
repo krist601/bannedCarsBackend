@@ -1,5 +1,5 @@
 import { createHash, createHmac, timingSafeEqual } from "node:crypto";
-import { sealedProductTitle } from "./sealed-title";
+import { sealedProductTitle, sealedSetName } from "./sealed-title";
 import { Modules } from "@medusajs/framework/utils";
 import { createProductsWorkflow } from "@medusajs/medusa/core-flows";
 import { productStoreChannels } from "./cms-stores";
@@ -215,7 +215,7 @@ export function matchesFoundProduct(
     existing.metadata?.wpn_id === p.id ||
     existing.handle === `wpn-${code}-${p.id.toLowerCase()}` ||
     (String(existing.metadata?.set_code || "").toLowerCase() === code &&
-      [sealedProductTitle(setName, p.name), `${setName} ${p.name}`, p.name].some(
+      [sealedProductTitle(setName, p.name), `${setName} ${p.name}`, `${sealedSetName(setName)} ${sealedProductTitle(setName, p.name)}`, p.name].some(
         (title) => normalize(existing.title || "") === normalize(title),
       ))
   );
@@ -488,7 +488,7 @@ export async function sealedFinder(req: any, res: any, body: any) {
                       banner_image: currentSet.metadata?.sealed_banner_url || "",
                       kind: "sealed",
                       game: preview.game,
-                      set: preview.name,
+                      set: sealedSetName(preview.name),
                       set_code: preview.code,
                       language: "English",
                       wpn_id: p.id,
