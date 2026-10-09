@@ -1,5 +1,6 @@
 import { createHmac, timingSafeEqual } from "node:crypto"
 import { Modules } from "@medusajs/framework/utils"
+import { BRAND, emailButton, emailShell, escapeHtml } from "./email-layout"
 
 const TOKEN_TTL_MS = 24 * 60 * 60 * 1000
 const SIGNATURE_KEY = "email_verified_sig"
@@ -42,9 +43,15 @@ export function verificationEmail(locale: "es" | "en", link: string, name?: stri
   const greeting = name ? (es ? `Hola ${name},` : `Hi ${name},`) : (es ? "Hola," : "Hi,")
   const subject = es ? "Confirma tu correo en Banned Cards" : "Confirm your email at Banned Cards"
   const body = es
-    ? ["Gracias por crear tu cuenta en Banned Cards. Para confirmar tu correo, usa el siguiente botón:", "Confirmar mi correo", "Este enlace vence en 24 horas. Si tú no creaste esta cuenta, puedes ignorar este mensaje."]
-    : ["Thanks for creating your Banned Cards account. To confirm your email, use the button below:", "Confirm my email", "This link expires in 24 hours. If you didn't create this account, you can ignore this message."]
-  const html = `<div style="font-family:Arial,Helvetica,sans-serif;max-width:520px;margin:auto;color:#1c1c22;line-height:1.5"><h2 style="margin:0 0 16px">Banned Cards</h2><p>${greeting}</p><p>${body[0]}</p><p style="margin:24px 0"><a href="${link}" style="background:#6d3df0;color:#fff;padding:12px 22px;border-radius:8px;text-decoration:none;font-weight:bold">${body[1]}</a></p><p style="font-size:13px;color:#555">${body[2]}</p><p style="font-size:12px;color:#777;word-break:break-all">${link}</p></div>`
+    ? ["Gracias por crear tu cuenta en Banned Cards. Para confirmar tu correo, usa el siguiente botón:", "Confirmar mi correo", "Este enlace vence en 24 horas. Si tú no creaste esta cuenta, puedes ignorar este mensaje.", "Si el botón no funciona, copia y pega este enlace en tu navegador:", "Bienvenido", "Confirma tu correo"]
+    : ["Thanks for creating your Banned Cards account. To confirm your email, use the button below:", "Confirm my email", "This link expires in 24 hours. If you didn't create this account, you can ignore this message.", "If the button doesn't work, copy and paste this link into your browser:", "Welcome", "Confirm your email"]
+  const html = emailShell({
+    lang: locale, title: subject, preheader: body[0], eyebrow: body[4], heading: body[5],
+    body: `<p style="margin:0 0 6px;color:${BRAND.text}">${escapeHtml(greeting)}</p><p style="margin:0;color:${BRAND.muted}">${escapeHtml(body[0])}</p>`
+      + `<div align="center">${emailButton(link, body[1])}</div>`
+      + `<p style="margin:22px 0 0;font-size:13px;color:${BRAND.muted}">${escapeHtml(body[2])}</p>`
+      + `<p style="margin:18px 0 4px;font-size:12px;color:${BRAND.muted}">${escapeHtml(body[3])}</p><p style="margin:0 0 22px;font-size:12px;line-height:1.5;word-break:break-all"><a href="${link}" style="color:${BRAND.link}">${escapeHtml(link)}</a></p>`,
+  })
   return { subject, html, text: `${greeting}\n\n${body[0]}\n${link}\n\n${body[2]}` }
 }
 

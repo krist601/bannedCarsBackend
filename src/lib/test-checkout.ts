@@ -2,7 +2,8 @@ import { ContainerRegistrationKeys, Modules } from "@medusajs/framework/utils"
 import { createOrderWorkflow } from "@medusajs/medusa/core-flows"
 import { normalizeSections } from "./storefront-sections"
 import { storeWarehouseIds } from "./store-warehouse-scope"
-import { orderSummaryEmail } from "./order-email"
+import { orderSummaryEmail, storeOrderEmail, type Delivery, type TaxDocument } from "./order-email"
+import { formatRut, isValidRut } from "./rut"
 import { invalidateCatalogueCache } from "./catalogue-cache"
 
 export type CheckoutLine = {
@@ -87,8 +88,32 @@ async function readCheckoutState(req: any, cart: any, stockScope: { channel: str
   return { lines, levels, itemIds }
 }
 
-export type Contact = { name?: string; phone?: string; address?: string; city?: string; notes?: string }
+export type Contact = {
+  name?: string; lastName?: string; phone?: string; address?: string; address2?: string; city?: string; region?: string; branch?: string; notes?: string
+  document?: "boleta" | "factura"; rut?: string; company?: { rut?: string; name?: string; activity?: string; address?: string; comuna?: string }; shipping?: string
+}
 const clean = (value: unknown, max: number) => (typeof value === "string" ? value.trim().slice(0, max) : "")
+
+/**
+ * Delivery and tax-document data from the checkout page. Only checked when the page sends a document type,
+ * so older clients that send just a name, phone and address keep working.
+ */
+export function readCheckoutDetails(contact: Contact | undefined) {
+  const c = contact ?? {}
+  const base = { name: clean(c.name, 80), lastName: clean(c.lastName, 80), phone: clean(c.phone, 40), address: clean(c.address, 200), address2: clean(c.address2, 120), city: clean(c.city, 80), region: clean(c.region, 80), branch: clean(c.branch, 120), notes: clean(c.notes, 500) }
+  if (c.document !== "boleta" && c.document !== "factura") return { ...base, document: null as TaxDocument | null }
+  const need = (value: string, label: string) => { if (!value) throw new CheckoutError(400, "invalid_contact", `${label} is required.`) }
+  need(base.name, "Name"); need(base.lastName, "Last name"); need(base.address, "Address"); need(base.city, "Comuna"); need(base.region, "Region")
+  if (base.phone.replace(/\D/g, "").length < 8) throw new CheckoutError(400, "invalid_contact", "Enter a valid phone number.")
+  if (c.document === "boleta") {
+    if (!isValidRut(c.rut)) throw new CheckoutError(400, "invalid_rut", "Enter a valid RUT.")
+    return { ...base, document: { type: "boleta" as const, rut: formatRut(String(c.rut)) } }
+  }
+  const company = { rut: clean(c.company?.rut, 20), name: clean(c.company?.name, 160), activity: clean(c.company?.activity, 160), address: clean(c.company?.address, 200), comuna: clean(c.company?.comuna, 80) }
+  if (!isValidRut(company.rut)) throw new CheckoutError(400, "invalid_rut", "Enter a valid company RUT.")
+  need(company.name, "Company name"); need(company.activity, "Business activity"); need(company.address, "Company address"); need(company.comuna, "Company comuna")
+  return { ...base, document: { type: "factura" as const, rut: formatRut(company.rut), company: { ...company, rut: formatRut(company.rut) } } }
+}
 
 export async function placeTestOrder(req: any, customerId: string, body: { cart_id?: unknown; contact?: Contact; locale?: unknown }) {
   if (!(await testCheckoutEnabled(req.scope))) throw new CheckoutError(403, "test_checkout_disabled", "Test checkout is turned off.")
@@ -105,7 +130,9 @@ export async function placeTestOrder(req: any, customerId: string, body: { cart_
   const customer = await req.scope.resolve(Modules.CUSTOMER).retrieveCustomer(customerId)
   const locale = body.locale === "en" ? "en" : "es"
   const contact = body.contact ?? {}
-  const name = clean(contact.name, 120), phone = clean(contact.phone, 40), address = clean(contact.address, 200), city = clean(contact.city, 80), notes = clean(contact.notes, 500)
+  const details = readCheckoutDetails(contact)
+  const fullName = [details.name, details.lastName].filter(Boolean).join(" ")
+  const name = fullName, phone = details.phone, address = details.address, city = details.city, notes = details.notes
 
   const first = await readCheckoutState(req, cart, stockScope)
   const precheck = planStock(first.lines, first.levels)
@@ -120,9 +147,12 @@ export async function placeTestOrder(req: any, customerId: string, body: { cart_
       input: {
         region_id: cart.region_id, sales_channel_id: stockScope.channel, customer_id: customerId, email: customer.email, currency_code: cart.currency_code,
         status: "pending",
-        items: cart.items.map((item: any) => ({ variant_id: item.variant_id, quantity: Number(item.quantity), unit_price: Number(item.unit_price), title: item.title })),
-        ...(address || phone || name ? { shipping_address: { first_name: name || customer.first_name || "", last_name: customer.last_name || "", address_1: address, city, phone, country_code: "cl" } } : {}),
-        metadata: { test_order: true, payment_status: "not_paid", payment_updated_at: new Date().toISOString(), customer_notes: notes || undefined, contact_phone: phone || undefined, contact_name: name || undefined },
+        items: cart.items.map((item: any) => ({ variant_id: item.variant_id, quantity: Number(item.quantity), unit_price: Number(item.unit_price), title: item.title, ...(item.thumbnail ? { thumbnail: item.thumbnail } : {}) })),
+        ...(address || phone || name ? { shipping_address: { first_name: details.name || customer.first_name || "", last_name: details.lastName || customer.last_name || "", address_1: address, ...(details.address2 ? { address_2: details.address2 } : {}), city, ...(details.region ? { province: details.region } : {}), phone, country_code: "cl", ...(details.document?.type === "factura" ? { company: details.document.company!.name } : {}) } } : {}),
+        metadata: {
+          test_order: true, payment_status: "not_paid", payment_updated_at: new Date().toISOString(), customer_notes: notes || undefined, contact_phone: phone || undefined, contact_name: name || undefined,
+          ...(details.document ? { document_type: details.document.type, document_rut: details.document.rut, ...(details.document.company ? { company: details.document.company } : {}), shipping_method: "starken_por_pagar", delivery_region: details.region, delivery_comuna: city, delivery_address: [address, details.address2].filter(Boolean).join(", "), ...(details.branch ? { starken_branch: details.branch } : {}) } : {}),
+        },
       },
     } as any)
     const { data: [full] } = await req.scope.resolve(ContainerRegistrationKeys.QUERY).graph({
@@ -141,9 +171,16 @@ export async function placeTestOrder(req: any, customerId: string, body: { cart_
   invalidateCatalogueCache()
   let emailSent = false
   try {
-    const message = orderSummaryEmail(locale, { ...created, payment_status: "not_paid", customer_name: name || customer.first_name || "", notes })
+    const delivery: Delivery | undefined = details.document ? { name: fullName, phone, address, address2: details.address2, comuna: city, region: details.region, branch: details.branch, shipping: "starken" } : undefined
+    const message = orderSummaryEmail(locale, { ...created, payment_status: "not_paid", customer_name: details.name || customer.first_name || "", notes, delivery, document: details.document ?? undefined })
     await req.scope.resolve(Modules.NOTIFICATION).createNotifications({ to: customer.email, channel: "email", template: "order-summary", data: message })
     emailSent = true
   } catch { /* the order exists; a failed email must not undo it */ }
+  // The store gets its own copy with everything needed to ship and to issue the boleta or factura.
+  try {
+    const delivery: Delivery = { name: fullName, phone, address, address2: details.address2, comuna: city, region: details.region, branch: details.branch, shipping: "starken" }
+    const message = storeOrderEmail({ ...created, payment_status: "not_paid", customer_name: fullName, customer_email: customer.email, notes, delivery: details.document ? delivery : undefined, document: details.document ?? undefined })
+    await req.scope.resolve(Modules.NOTIFICATION).createNotifications({ to: process.env.STORE_ORDER_EMAIL || "compras@bannedcards.cl", channel: "email", template: "store-order", data: message })
+  } catch { /* best effort */ }
   return { order: { ...created, payment_status: "not_paid" as const }, email_sent: emailSent }
 }
